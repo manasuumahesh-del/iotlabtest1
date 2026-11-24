@@ -1,5 +1,6 @@
 {
   "cleanUrls": true,
+  "redirects": [{ "source": "/", "destination": "/exam/", "permanent": false }],
   "headers": [
     { "source": "/api/(.*)", "headers": [{ "key": "Cache-Control", "value": "no-store" }] },
     { "source": "/(exam|faculty)(.*)", "headers": [{ "key": "X-Robots-Tag", "value": "noindex" }] }

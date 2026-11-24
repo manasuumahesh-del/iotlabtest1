@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IoT Lab Student Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a lab handout for students: friendly, exact, nothing extra.
+   IDEA: the cover of a lab record book, opening onto two benches: watch, then build.
+   PICTURE: an Arduino with a row of LEDs lit as a running light, drawn on the green bench mat.
+   COLOUR and TYPE: Arduino teal band, mat green picture, amber for the lit LED; IBM Plex Sans + Mono.
+   LAYOUT: teal band with title and picture, two mode cards, then the seven experiments with direct links. */
+:root{color-scheme:light dark;--bg:light-dark(#f3f6f5,#0d1716);--ink:light-dark(#13211f,#e3ece9);--mute:light-dark(#53625f,#93a6a1);--card:light-dark(#fff,#152321);--line:light-dark(#d4dedb,#28403c);--teal:#00878F;--teal2:light-dark(#006b72,#3cc2c9);--amber:#f5a524;--mat:#1f3d35}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(24px,4vw,52px) max(5vw,16px)}
+.wrap{max-width:1180px;margin:0 auto}
+header{background:var(--teal);color:#fff}
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:32px;align-items:center}
+h1{font-size:clamp(32px,5vw,52px);line-height:1.05;margin:0 0 12px;text-wrap:balance}
+.hero p{margin:0 0 8px;color:#d9f3f4;max-width:56ch;font-size:17px}
+.hero small{color:#bfe9eb;font-size:14px}
+.pic{background:var(--mat);border-radius:16px;overflow:hidden}.pic svg{display:block;width:100%;height:auto}
+.modes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:-28px}
+.mode{display:grid;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;text-decoration:none;color:var(--ink);box-shadow:0 6px 24px #0002}
+.mode:hover{border-color:var(--teal)}.mode:focus-visible,a:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.mode h2{margin:0;font-size:26px;color:var(--teal2)}.mode p{margin:0;color:var(--mute)}
+.mode ol{margin:4px 0 0;padding-left:20px}.mode li{margin:2px 0}
+.go{justify-self:start;margin-top:6px;font-weight:600;background:var(--teal);color:#fff;border-radius:10px;padding:10px 16px;min-height:44px;display:inline-flex;align-items:center}
+.mode.p .go{background:var(--amber);color:#1b1300}
+h3{font-size:22px;margin:0 0 12px}
+table{border-collapse:collapse;width:100%;font-size:15px;background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
+th{font-size:13px;color:var(--mute);font-weight:600}
+td.n{font:600 15px "IBM Plex Mono",monospace;color:var(--teal2);white-space:nowrap}
+td a{display:inline-flex;align-items:center;min-height:40px;padding:0 12px;border-radius:9px;border:1px solid var(--line);text-decoration:none;color:var(--ink);font-weight:600;margin:2px 6px 2px 0;white-space:nowrap}
+td a:hover{border-color:var(--teal)}
+.note{color:var(--mute);font-size:14px;margin:12px 0 0}
+@media(max-width:820px){.hero{grid-template-columns:minmax(0,1fr)}.modes{grid-template-columns:minmax(0,1fr);margin-top:16px}}
+@media(max-width:600px){table{font-size:14px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 12px;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mute)}.stack td:empty{display:none}}
+@keyframes run{0%,18%{opacity:1}20%,100%{opacity:0}}
+.lit{animation:run 5s linear infinite}
+@media(prefers-reduced-motion:reduce){.lit{animation:none;opacity:0}.lit.s0{opacity:1}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<header class="band" style="padding-bottom:56px">
+  <div class="wrap hero">
+    <div>
+      <h1>IoT Lab Student Kit</h1>
+      <p>All seven BCS701 experiments on a virtual Arduino UNO. Watch each one work, then build the circuit yourself and check it.</p>
+      <small>Dept. of CSE, CITNC · Faculty: Mahesh N · Works in any browser, nothing to install</small>
+    </div>
+    <div class="pic" id="pic"></div>
+  </div>
+</header>
+
+<main class="band" style="padding-top:0">
+  <div class="wrap">
+    <div class="modes">
+      <a class="mode" href="learn.html">
+        <h2>Learn</h2>
+        <p>See the finished circuit run its lab-manual program.</p>
+        <ol><li>Pick an experiment and press Run</li><li>Watch the circuit, the current program line and the serial monitor</li><li>Read how it works, then press Perform experiment for the observation table</li></ol>
+        <span class="go">Open Learn mode</span>
+      </a>
+      <a class="mode p" href="practice.html">
+        <h2>Practice</h2>
+        <p>The same bench as the lab exam, with no time or tab limits.</p>
+        <ol><li>Take parts from the tray and wire the pins</li><li>Upload and run the program on your circuit</li><li>Press Check my circuit for a score out of 100 and what to fix</li></ol>
+        <span class="go">Open Practice bench</span>
+      </a>
+    </div>
+
+    <h3 style="margin-top:36px">The seven experiments</h3>
+    <div class="scroll"><table class="stack" id="exps"></table></div>
+    <p class="note">Your practice circuits are saved in this browser, so you can come back to them. Learn first, then practise until every check is green.</p>
+  </div>
+</main>
+
+<script>
+{
+const E=[['Blink 5 LEDs back and forth','D2–D6, 5 LEDs, 220 Ω'],['Relay with Arduino','D7, relay, green and red LEDs'],['Intrusion detection','HC-SR04, 2 LEDs, piezo'],['DC motor speed control (PWM)','Potentiometer, NPN, motor, 9 V'],['Smart street light (LDR)','LDR divider on A0, LED on D9'],['Dry / wet waste (moisture)','Moisture sensor, 3 LEDs'],['pH of milk, lime and water','Potentiometer on A0']];
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+document.getElementById('exps').innerHTML=`<thead><tr><th>Exp</th><th>Experiment</th><th>Main parts</th><th>Open</th></tr></thead><tbody>${E.map(([t,p],i)=>`<tr><td class="n">${i+1}</td><td><b>${esc(t)}</b></td><td>${esc(p)}</td><td><a href="learn.html#exp${i+1}">Learn</a><a href="practice.html#exp${i+1}">Practice</a></td></tr>`).join('')}</tbody>`;
+const xs=[300,350,400,450,500];
+const led=(x,i)=>`<g><line x1="${x-5}" y1="168" x2="${x-5}" y2="188" stroke="#c3c7cc" stroke-width="2.4"/><line x1="${x+5}" y1="168" x2="${x+5}" y2="184" stroke="#b9bec4" stroke-width="2.4"/><circle class="lit s${i}" cx="${x}" cy="138" r="26" fill="#ff4a3a" opacity="0" style="filter:blur(8px);animation-delay:${[0,1,2,3,4][i]}s"/><path d="M${x-13} 166V140a13 13 0 0 1 26 0V166Z" fill="#c71c1c" opacity=".85"/><path class="lit s${i}" d="M${x-13} 166V140a13 13 0 0 1 26 0V166Z" fill="#ff7a6b" opacity="0" style="animation-delay:${i}s"/><rect x="${x-15}" y="164" width="30" height="5" rx="2" fill="#b01818"/></g>`;
+document.getElementById('pic').innerHTML=`<svg viewBox="0 0 560 300" role="img" aria-label="An Arduino UNO driving five LEDs as a running light"><defs><pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#ffffff10"/></pattern><linearGradient id="u" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#109aa6"/><stop offset="1" stop-color="#06707b"/></linearGradient></defs><rect width="560" height="300" fill="url(#g)"/>
+<rect x="12" y="116" width="40" height="34" rx="3" fill="#c9ccd1"/><rect x="34" y="96" width="210" height="150" rx="10" fill="url(#u)" stroke="#065a62" stroke-width="2"/><rect x="70" y="102" width="166" height="12" rx="2" fill="#141414"/><rect x="116" y="186" width="112" height="26" rx="2" fill="#1b1b1b"/><text x="120" y="174" style="font:700 30px 'IBM Plex Sans',sans-serif;fill:#fff">UNO</text>
+${xs.map((x,i)=>`<path d="M${200-i*12} 108 C${200-i*12} 60 ${x} 230 ${x-5} 188" fill="none" stroke="${['#e5484d','#f5a524','#ffd60a','#46c37b','#5b8cff'][i]}" stroke-width="3.5" stroke-linecap="round"/>`).join('')}
+<rect x="270" y="186" width="260" height="70" rx="6" fill="#ebe8e1"/><line x1="282" y1="244" x2="518" y2="244" stroke="#3e63dd" stroke-width="2"/>
+${xs.map((x,i)=>`<line x1="${x+5}" y1="186" x2="${x+5}" y2="244" stroke="#b9bec4" stroke-width="2"/><rect x="${x+1}" y="204" width="8" height="22" rx="3" fill="#d8c08a"/>`).join('')}${xs.map(led).join('')}</svg>`;
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Learn · IoT Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: a lab-bench instrument, calm and exact, made for a teacher running BCS701 practicals.
+   IDEA: the green cutting mat on an electronics bench, with an Arduino UNO and parts wired on it.
+   PICTURE: a live circuit that runs the manual's own programs; LEDs glow, relay clicks, motor spins.
+   COLOUR and TYPE: Arduino teal leads, mat green support, signal amber accent; IBM Plex Sans + Mono.
+   LAYOUT: experiment tabs, then circuit + controls beside code and serial monitor, then the record. */
+:root{color-scheme:light dark;--bg:light-dark(#f3f6f5,#0d1716);--ink:light-dark(#13211f,#e3ece9);--mute:light-dark(#53625f,#93a6a1);--card:light-dark(#ffffff,#152321);--line:light-dark(#d4dedb,#26393600);--line2:light-dark(#d4dedb,#28403c);--teal:#00878F;--teal2:light-dark(#006b72,#3cc2c9);--amber:#f5a524;--mat:#1d3a33}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(18px,3vw,36px) max(4vw,16px)}
+header.band{background:var(--teal);color:#fff;padding-bottom:0}
+h1{font-size:clamp(28px,4vw,40px);line-height:1.05;margin:0 0 6px;text-wrap:balance}
+header p{margin:0 0 16px;color:#d9f3f4;max-width:70ch}
+nav{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none}
+nav button{flex:none;font:600 15px "IBM Plex Sans",sans-serif;border:0;border-radius:10px 10px 0 0;padding:12px 16px;min-height:44px;background:#0a6f76;color:#cdeff1;cursor:pointer}
+nav button[aria-selected=true]{background:var(--bg);color:var(--ink)}
+nav button:focus-visible,button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.work{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,400px);gap:18px;max-width:1320px;margin:0 auto}
+.stage{background:var(--mat);border-radius:14px;overflow:hidden;position:relative}
+.stage svg{display:block;width:100%;height:auto}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+.btn{font:600 15px "IBM Plex Sans",sans-serif;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line2);background:var(--card);color:var(--ink);cursor:pointer}
+.btn.pri{background:var(--teal);border-color:var(--teal);color:#fff}
+.btn.acc{background:var(--amber);border-color:var(--amber);color:#1b1300}
+select{font:16px "IBM Plex Sans",sans-serif;min-height:44px;border-radius:10px;border:1px solid var(--line2);background:var(--card);color:var(--ink);padding:0 10px}
+.inp{display:grid;gap:4px;margin-top:12px;background:var(--card);border:1px solid var(--line2);border-radius:12px;padding:12px 14px}
+.inp label{display:flex;justify-content:space-between;gap:10px;font-weight:600}
+.inp output{font:600 16px "IBM Plex Mono",monospace;color:var(--teal2);white-space:nowrap}
+.inp small{color:var(--mute)}
+input[type=range]{width:100%;height:44px;accent-color:var(--teal)}
+.pins{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.chip{font:13px "IBM Plex Mono",monospace;padding:5px 9px;border-radius:8px;background:var(--card);border:1px solid var(--line2);white-space:nowrap}
+.chip.hi{background:var(--amber);border-color:var(--amber);color:#1b1300}
+.side{display:grid;gap:14px;align-content:start}
+.panel{background:var(--card);border:1px solid var(--line2);border-radius:14px;overflow:hidden}
+.panel h2{font-size:16px;margin:0;padding:10px 14px;border-bottom:1px solid var(--line2);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel h2 span{font-weight:400;color:var(--mute);font-size:13px}
+pre{margin:0;font:13px/1.5 "IBM Plex Mono",monospace;overflow:auto}
+#code{max-height:380px;padding:8px 0}
+#code div{padding:0 12px 0 0;white-space:pre}
+#code i{display:inline-block;width:3.2em;text-align:right;padding-right:1em;color:var(--mute);font-style:normal;user-select:none}
+#code div.cur{background:color-mix(in srgb,var(--amber) 30%,transparent)}
+#serial{height:190px;padding:10px 12px;background:#0b1211;color:#9ff0c4;white-space:pre-wrap}
+.below{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:18px;max-width:1320px;margin:0 auto}
+.below h3{font-size:20px;margin:0 0 8px}
+.below p{margin:0 0 12px;max-width:70ch}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line2);text-align:left;vertical-align:top}
+th{font-weight:600;color:var(--mute);font-size:13px}
+td.n{text-align:right;font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+.scroll{overflow-x:auto}
+.verdict{margin-top:12px;padding:12px 14px;border-radius:12px;background:color-mix(in srgb,var(--teal) 14%,var(--card));border:1px solid color-mix(in srgb,var(--teal) 40%,transparent)}
+.verdict.bad{background:color-mix(in srgb,#e5484d 14%,var(--card));border-color:#e5484d88}
+.empty{color:var(--mute);padding:14px 0}
+.kitnav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.kitnav a{color:#fff;text-decoration:none;font-weight:600;padding:8px 12px;border-radius:9px;background:#0a6f76;min-height:40px;display:inline-flex;align-items:center}.kitnav a[aria-current]{background:#fff;color:#00666c}.kitnav a:first-child{background:transparent;padding-left:0}
+#work{margin:0 0 14px;padding-left:22px}#work li{margin:4px 0;max-width:70ch}
+.silk{font:600 10px "IBM Plex Mono",monospace;fill:#e8fbfc}
+.pinl{font:700 11px "IBM Plex Mono",monospace;fill:#fff;paint-order:stroke;stroke:#004c52;stroke-width:2.5px}
+.cp{font:700 11px "IBM Plex Mono",monospace;fill:#ffe9a8;paint-order:stroke;stroke:#0b1a16;stroke-width:3px}
+.lbl{font:600 12px "IBM Plex Sans",sans-serif;fill:#e9f2ef}
+.lbl.dk{fill:#2a2a2a}
+.big{font:700 20px "IBM Plex Mono",monospace;fill:#ffd36b}
+.w{fill:none;stroke-width:3;stroke-linejoin:round;stroke-linecap:round;transition:stroke-width .15s}
+.w.hot{stroke-width:4.5;filter:drop-shadow(0 0 4px #ffd36b)}
+.leg{stroke:#b9bec4;stroke-width:2.5}
+.led .core{opacity:0;transition:opacity .08s}.led.on .core{opacity:1}.led .dim{transition:opacity .08s}.led.on .dim{opacity:0}.led.on .die{fill:#fff}
+.led .halo{fill:var(--c);opacity:0;transition:opacity .08s}
+.led.on .halo{opacity:.55;filter:blur(8px)}
+.snd{stroke:#ffd36b;stroke-width:3;fill:none;opacity:0}
+.snd.on{animation:ring .5s linear infinite}
+@keyframes ring{0%{opacity:.9}100%{opacity:0;transform:scale(1.25)}}
+.ping{stroke:#9ff0c4;stroke-width:2;fill:none;stroke-dasharray:4 6;animation:ping .6s linear infinite}
+@keyframes ping{to{stroke-dashoffset:-20}}
+@media(prefers-reduced-motion:reduce){.snd.on,.ping{animation:none}.snd.on{opacity:.8}}
+@media(max-width:1000px){.work,.below{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:600px){table{font-size:13px}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:9em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:8.5em;margin-inline-start:-9em;white-space:normal;color:var(--mute)}.stack td:empty{display:none}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+</head>
+<body>
+<header class="band">
+  <nav class="kitnav" aria-label="Student kit"><a href="index.html">IoT Lab Student Kit</a><a href="learn.html" aria-current="page">Learn</a><a href="practice.html">Practice</a></nav>
+  <h1>Learn: IoT Lab Simulator</h1>
+  <p>BCS701 Internet of Things Lab, Dept. of CSE, CITNC. Pick an experiment, press Run and watch the circuit, the program line and the serial monitor. Read how it works below, then press Perform experiment to fill the observation table.</p>
+  <nav id="tabs" role="tablist"></nav>
+</header>
+
+<section class="band">
+  <div class="work">
+    <div>
+      <div class="stage"><svg id="svg" viewBox="0 0 760 460" role="img" aria-label="Circuit simulation"></svg></div>
+      <div class="ctl">
+        <button class="btn pri" id="run">Run</button>
+        <button class="btn" id="pause">Pause</button>
+        <button class="btn" id="reset">Reset</button>
+        <label>Speed <select id="speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option><option value="8">8×</option></select></label>
+        <label><input type="checkbox" id="sound"> Buzzer sound</label>
+        <span id="clock" class="chip">t = 0.0 s</span>
+      </div>
+      <div id="inputs"></div>
+      <div class="pins" id="pins"></div>
+    </div>
+    <div class="side">
+      <div class="panel"><h2>Program <span id="codeName">sketch.ino</span></h2><pre id="code"></pre></div>
+      <div class="panel"><h2>Serial monitor <span>9600 baud</span><button class="btn" id="clrSer" style="min-height:32px;padding:0 10px;font-size:13px">Clear</button></h2><pre id="serial"></pre></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" style="padding-top:0">
+  <div class="below">
+    <div>
+      <h3 id="title"></h3>
+      <p id="aim"></p>
+      <p><b>Components:</b> <span id="comps"></span></p>
+      <h3>How it works</h3>
+      <ol id="work"></ol>
+      <h3>Connections</h3>
+      <div class="scroll"><table class="stack" id="conn"></table></div>
+    </div>
+    <div>
+      <h3>Observation table</h3>
+      <p id="howto" style="color:var(--mute)"></p>
+      <div class="ctl" style="margin-top:0;margin-bottom:10px">
+        <button class="btn acc" id="auto">Perform experiment</button>
+        <button class="btn" id="rec">Record reading</button>
+        <button class="btn" id="copy">Copy as CSV</button>
+        <button class="btn" id="clr">Clear table</button>
+      </div>
+      <div class="scroll"><table class="stack" id="obs"></table></div>
+      <div id="verdict"></div>
+    </div>
+  </div>
+</section>
+
+<script>
+{
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const COL=['#e5484d','#f5a524','#ffd60a','#46c37b','#5b8cff','#b07cf0','#f07ab8'];
+const STOP={};
+let RUN=null, EXP=null, REC=null, PIN={}, rows=[];
+const B={d:[],pwm:[],a:{},t:0,loops:0,line:-1,serial:'',tx:0,inp:0,rpm:0,ang:0};
+
+/* ---------- drawing helpers ---------- */
+const LEDP={red:['#5e0808','#d41616','#ff6b6b','#ffe0e0'],green:['#06461b','#15a844','#74f29d','#e0ffea'],yellow:['#6e5200','#e3ad06','#ffe870','#fffbe6'],blue:['#081f63','#2160e8','#8fb2ff','#e6eeff']};
+const LEDDEFS=Object.entries(LEDP).map(([k,[d,m,l,w]])=>`<linearGradient id="lb-${k}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${d}" stop-opacity=".95"/><stop offset=".2" stop-color="${m}" stop-opacity=".78"/><stop offset=".42" stop-color="${l}" stop-opacity=".7"/><stop offset=".66" stop-color="${m}" stop-opacity=".78"/><stop offset="1" stop-color="${d}" stop-opacity=".95"/></linearGradient><radialGradient id="lg-${k}"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="${w}"/><stop offset=".6" stop-color="${l}" stop-opacity=".75"/><stop offset="1" stop-color="${m}" stop-opacity="0"/></radialGradient>`).join('')+`<linearGradient id="lleg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#eef0f2"/><stop offset=".5" stop-color="#b4b9bf"/><stop offset="1" stop-color="#83888e"/></linearGradient>`;
+function ledBody(id,c,cx,ty){const [d,m,l]=LEDP[c];const X=v=>cx+v,Y=v=>ty+v;
+ return `<g class="lframe"><path d="M${X(-8)} ${Y(40)}V${Y(17)}h4v4h-1.6V${Y(40)}Z" fill="#9aa0a6" opacity=".85"/><path d="M${X(2)} ${Y(40)}V${Y(20)}h-3l-1-4h12l-1 4h-3V${Y(40)}Z" fill="#9aa0a6" opacity=".85"/><rect class="die" id="${id}-die" x="${X(3)}" y="${Y(13.6)}" width="4" height="2.4" fill="#3a3a3a"/><path d="M${X(-6)} ${Y(17)}Q${X(-3)} ${Y(6)} ${X(4)} ${Y(14)}" stroke="#d7dade" stroke-width=".7" fill="none"/></g>
+ <path d="M${X(-13)} ${Y(37)}V${Y(13)}a13 13 0 0 1 26 0V${Y(37)}Z" fill="url(#lb-${c})" stroke="${d}" stroke-opacity=".6" stroke-width=".8"/>
+ <ellipse class="core" id="${id}-core" cx="${X(2)}" cy="${Y(15)}" rx="13" ry="16" fill="url(#lg-${c})" opacity="0"/>
+ <path d="M${X(-15)} ${Y(35)}H${X(13)}V${Y(40.5)}H${X(-12)}Q${X(-15)} ${Y(40.5)} ${X(-15)} ${Y(38)}Z" fill="url(#lb-${c})" stroke="${d}" stroke-opacity=".6" stroke-width=".8"/>
+ <path d="M${X(-8.5)} ${Y(5)}Q${X(-10)} ${Y(20)} ${X(-9)} ${Y(33)}" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" fill="none" stroke-linecap="round"/><ellipse cx="${X(-5)}" cy="${Y(3)}" rx="3.2" ry="2" fill="#fff" opacity=".7"/><ellipse cx="${X(0)}" cy="${Y(1.5)}" rx="7" ry="2.2" fill="#fff" opacity=".14"/>
+ <path class="dim" id="${id}-dim" d="M${X(-15)} ${Y(40.5)}V${Y(13)}a15 15 0 0 1 30 0V${Y(40.5)}Z" fill="#000" opacity=".3"/>`}
+
+const hole=(x,y)=>`<rect x="${x-3}" y="${y-3}" width="6" height="6" fill="#4a4a4a"/>`;
+function arduino(){
+  PIN={};const y0=150;let s=`<rect x="8" y="172" width="44" height="42" rx="3" fill="#c9ccd1" stroke="#8d9299"/><rect x="12" y="282" width="36" height="36" rx="4" fill="#1b1b1b"/>
+  <rect x="24" y="${y0}" width="272" height="190" rx="10" fill="#00878F" stroke="#00666c" stroke-width="2"/>
+  <rect x="58" y="${y0+6}" width="244" height="14" rx="2" fill="#1d1d1d"/><rect x="98" y="${y0+170}" width="196" height="14" rx="2" fill="#1d1d1d"/>
+  <rect x="150" y="262" width="132" height="26" rx="2" fill="#222"/><text x="216" y="279" text-anchor="middle" class="silk">ATMEGA328P</text>
+  <text x="82" y="246" style="font:700 30px 'IBM Plex Sans';fill:#fff">UNO</text><text x="84" y="216" class="silk" style="font-size:12px">ARDUINO</text>
+  <rect id="ledL" x="110" y="186" width="10" height="6" fill="#6b5a2a"/><text x="124" y="192" class="silk">L</text>
+  <rect id="ledTX" x="110" y="198" width="10" height="6" fill="#6b5a2a"/><text x="124" y="204" class="silk">TX</text>
+  <rect x="230" y="232" width="10" height="6" fill="#4cff7a"/><text x="244" y="238" class="silk">ON</text>`;
+  ['AREF','GND','13','12','11','10','9','8','7','6','5','4','3','2','1','0'].forEach((n,i)=>{const x=64+i*14+(i>=8?8:0);PIN[/^\d+$/.test(n)?'D'+n:n==='GND'?'GNDt':n]=[x,y0+13];s+=hole(x,y0+13)+`<text class="pinl" transform="translate(${x-4},${y0+21}) rotate(90)">${n}</text>`});
+  ['IOREF','RST','3V3','5V','GND','GND2','VIN'].forEach((n,i)=>{const x=104+i*14;PIN[n]=[x,y0+177];s+=hole(x,y0+177)+`<text class="pinl" transform="translate(${x+4},${y0+169}) rotate(-90)">${n.replace('2','')}</text>`});
+  ['A0','A1','A2','A3','A4','A5'].forEach((n,i)=>{const x=210+i*14;PIN[n]=[x,y0+177];s+=hole(x,y0+177)+`<text class="pinl" transform="translate(${x+4},${y0+169}) rotate(-90)">${n}</text>`});
+  return s;
+}
+const pts=a=>a.map(p=>typeof p==='string'?PIN[p].join(','):p.join(',')).join(' ');
+const wire=(id,a,c)=>`<polyline class="w" id="${id}" points="${pts(a)}" stroke="${c}"/>`;
+const led=(id,x,y,c)=>{const n=/dc5f/i.test(c)?'green':'red';return `<g id="${id}" class="led" style="--c:${c}"><circle cx="${x}" cy="${y+20}" r="24" class="halo"/><line x1="${x}" y1="${y}" x2="${x}" y2="${y+3}" class="leg"/><line x1="${x}" y1="${y+42}" x2="${x}" y2="${y+44}" class="leg"/>${ledBody(id,n,x,y+2)}</g>${cp(x-17,y+12,'+','end')}${cp(x-17,y+44,'−','end')}`};
+const resV=(x,y1,y2)=>{const m=(y1+y2)/2;return `<line x1="${x}" y1="${y1}" x2="${x}" y2="${y2}" class="leg"/><rect x="${x-5}" y="${m-13}" width="10" height="26" rx="4" fill="#d8c08a"/><rect x="${x-5}" y="${m-8}" width="10" height="3" fill="#b0302a"/><rect x="${x-5}" y="${m-2}" width="10" height="3" fill="#b0302a"/><rect x="${x-5}" y="${m+4}" width="10" height="3" fill="#7a4a1c"/>`};
+const resH=(x1,x2,y)=>{const m=(x1+x2)/2;return `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" class="leg"/><rect x="${m-13}" y="${y-5}" width="26" height="10" rx="4" fill="#d8c08a"/><rect x="${m-8}" y="${y-5}" width="3" height="10" fill="#b0302a"/><rect x="${m-2}" y="${y-5}" width="3" height="10" fill="#b0302a"/><rect x="${m+4}" y="${y-5}" width="3" height="10" fill="#7a4a1c"/>`};
+const gnd=(x,y)=>`<line x1="${x}" y1="${y}" x2="${x}" y2="${y+8}" stroke="#cfd6d3" stroke-width="2"/><path d="M${x-10} ${y+8}h20M${x-6} ${y+12}h12M${x-2} ${y+16}h4" stroke="#cfd6d3" stroke-width="2"/>`;
+const vcc=(x,y,t='5V')=>`<line x1="${x}" y1="${y}" x2="${x}" y2="${y-10}" stroke="#ff8a7a" stroke-width="2"/><path d="M${x-9} ${y-10}h18" stroke="#ff8a7a" stroke-width="2"/><text x="${x}" y="${y-15}" text-anchor="middle" class="lbl" style="fill:#ff8a7a">${t}</text>`;
+const T=(x,y,t,a='middle',c='lbl')=>`<text x="${x}" y="${y}" text-anchor="${a}" class="${c}">${t}</text>`;
+const cp=(x,y,t,a='middle')=>`<text x="${x}" y="${y}" text-anchor="${a}" class="cp">${t}</text>`;
+
+/* ---------- physical models ---------- */
+const ldrOhm=L=>Math.pow(10,Math.log10(181000)-L/100*(Math.log10(181000)-Math.log10(506)));
+const ldrA0=L=>Math.round(1023*850/(850+ldrOhm(L)));
+const ohm=r=>r>=1000?(r/1000).toFixed(r>=10000?0:1)+' kΩ':Math.round(r)+' Ω';
+const RPM_MAX=20000;
+
+/* ---------- experiments ---------- */
+const X=[
+{key:'exp1',tab:'1 · Blink 5 LEDs',title:'Experiment 1: Blink 5 LEDs back and forth',
+ aim:'Develop a program to blink 5 LEDs back and forth using Arduino UNO.',
+ comps:'Arduino UNO R3, breadboard, 5 red LEDs, 5 current-limiting resistors, jumper wires.',
+ conn:[['D2','LED 1 anode'],['D3','LED 2 anode'],['D4','LED 3 anode'],['D5','LED 4 anode'],['D6','LED 5 anode'],['GND','Ground rail; each LED cathode to rail through a resistor']],
+ pins:['D2','D3','D4','D5','D6'],
+ code:`// Experiment 1: Blink 5 LEDs back and forth
+void setup()
+{
+  pinMode(2, OUTPUT);
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  pinMode(5, OUTPUT);
+  pinMode(6, OUTPUT);
+}
+
+void loop()
+{
+  // forward
+  for (int p = 2; p <= 6; p++) {
+    digitalWrite(p, HIGH);
+    delay(1000);
+    digitalWrite(p, LOW);
+    delay(100);
+  }
+  // reverse
+  for (int p = 5; p >= 2; p--) {
+    digitalWrite(p, HIGH);
+    delay(1000);
+    digitalWrite(p, LOW);
+    delay(100);
+  }
+}`,
+ build(){const xs=[420,480,540,600,660];let s=`<rect x="340" y="200" width="400" height="140" rx="6" fill="#ebe8e1"/><line x1="356" y1="326" x2="724" y2="326" stroke="#3e63dd" stroke-width="2"/>${T(360,318,'GND rail','start','lbl dk')}`;
+  s+=wire('wg',['GNDt',[PIN.GNDt[0],84],[724,84],[724,326]],'#6b6b6b');
+  xs.forEach((x,i)=>{const ry=140-i*9;s+=wire('w'+i,['D'+(2+i),[PIN['D'+(2+i)][0],ry],[x,ry],[x,222]],COL[i])+led('L'+i,x,222,'#ff3b30')+resV(x,266,326)+T(x+24,248,'LED'+(i+1),'start','lbl dk')});return s},
+ update(){for(let i=0;i<5;i++){on('#L'+i,B.d[2+i]);hot('#w'+i,B.d[2+i])}},
+ async setup(a){for(let p=2;p<=6;p++){a.L('pinMode('+p);a.pinMode(p,1)}},
+ async loop(a){for(let p=2;p<=6;p++){a.L('digitalWrite(p, HIGH)',0);a.digitalWrite(p,1);a.L('delay(1000)',0);await a.delay(1000);a.L('digitalWrite(p, LOW)',0);a.digitalWrite(p,0);a.L('delay(100)',0);await a.delay(100)}
+   for(let p=5;p>=2;p--){a.L('digitalWrite(p, HIGH)',1);a.digitalWrite(p,1);a.L('delay(1000)',1);await a.delay(1000);a.L('digitalWrite(p, LOW)',1);a.digitalWrite(p,0);a.L('delay(100)',1);await a.delay(100)}},
+ cols:['Step','Time (s)','Pin HIGH','LED ON','Direction'],
+ howto:'Perform experiment records one full back-and-forth cycle (9 steps): every time a pin goes HIGH, its time and LED are logged.',
+ events:9, onWrite(p,v){if(!v)return null;const n=rows.length;return [n+1,(B.t/1000).toFixed(1),'D'+p,'LED '+(p-1),n<5?'Forward':'Reverse']},
+ verify(r){const seq=r.map(x=>x[2]).join(',');const ok=seq==='D2,D3,D4,D5,D6,D5,D4,D3,D2';const gaps=r.slice(1).map((x,i)=>(x[1]-r[i][1]).toFixed(1));return [ok,ok?`LEDs lit in the order 1→5→1 (${seq}), one every ${gaps[0]} s (1 s ON + 0.1 s OFF). Matches the manual: back-and-forth running light.`:`Unexpected order: ${seq}`]}},
+
+{key:'exp2',tab:'2 · Relay',title:'Experiment 2: Interface a relay with Arduino',
+ aim:'Interface a relay with the Arduino board and switch two LEDs through its NO and NC contacts.',
+ comps:'Arduino UNO R3, 5 V SPDT relay (LU-5-R), green LED, red LED, 2 × 220 Ω resistors.',
+ conn:[['D7','Relay COIL1 (control signal)'],['Relay COIL2','GND (coil return)'],['5V','Relay COM'],['Relay NO','Green LED anode (ON when energised)'],['Relay NC','Red LED anode (ON when de-energised)'],['LED cathodes','220 Ω → GND']],
+ pins:['D7'],
+ code:`// Experiment 2: Interface a relay with Arduino board
+// Relay coil -> D7, COM -> 5V, NO -> Green LED, NC -> Red LED
+
+const int relayPin = 7;
+
+void setup()
+{
+  pinMode(relayPin, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop()
+{
+  digitalWrite(relayPin, HIGH);   // relay ON  -> NO closed -> Green LED ON
+  Serial.println("Relay ON : Green LED ON");
+  delay(2000);
+
+  digitalWrite(relayPin, LOW);    // relay OFF -> NC closed -> Red LED ON
+  Serial.println("Relay OFF: Red LED ON");
+  delay(2000);
+}`,
+ build(){let s=`<rect x="380" y="180" width="160" height="140" rx="8" fill="#2d6ad6" stroke="#1b4aa0" stroke-width="2"/>${T(398,312,'LU-5-R','start')}
+  <rect id="coil" x="396" y="206" width="30" height="88" rx="4" fill="#b87333"/><path d="M396 220h30M396 234h30M396 248h30M396 262h30M396 276h30" stroke="#7a4a1c" stroke-width="2"/>
+  <circle cx="480" cy="222" r="5" fill="#ddd"/><circle cx="520" cy="222" r="5" fill="#ddd"/>${T(480,206,'NC')}${T(520,206,'NO')}${T(500,312,'COM')}
+  <line id="arm" x1="500" y1="296" x2="480" y2="222" stroke="#f2f2f2" stroke-width="5" stroke-linecap="round"/><circle cx="500" cy="296" r="6" fill="#ddd"/>
+  <line x1="380" y1="215" x2="396" y2="215" class="leg"/><line x1="380" y1="285" x2="396" y2="285" class="leg"/>
+  <line x1="500" y1="296" x2="500" y2="342" class="leg"/><path d="M490 342h20" stroke="#ff8a7a" stroke-width="2"/><text x="500" y="360" text-anchor="middle" class="lbl" style="fill:#ff8a7a">5V</text>
+  <line x1="480" y1="217" x2="480" y2="180" class="leg"/><line x1="520" y1="217" x2="520" y2="180" class="leg"/>`;
+  s+=T(432,222,'COIL1','start')+T(432,290,'COIL2','start')+wire('wc',['D7',[PIN.D7[0],128],[352,128],[352,215],[380,215]],COL[4])+`<line x1="380" y1="285" x2="356" y2="285" class="leg"/>`+gnd(356,285);
+  s+=wire('wno',[[520,180],[520,150],[620,150],[620,200]],COL[3])+led('LG',620,200,'#3ddc5f')+resV(620,244,290)+gnd(620,290)+T(620,330,'Green (NO)');
+  s+=wire('wnc',[[480,180],[480,110],[700,110],[700,200]],COL[0])+led('LR',700,200,'#ff3b30')+resV(700,244,290)+gnd(700,290)+T(700,330,'Red (NC)');
+  s+=`<rect x="560" y="370" width="180" height="60" rx="10" fill="#0e211d"/>`+T(650,394,'Relay state')+`<text id="rst" x="650" y="420" text-anchor="middle" class="big">OFF</text>`;return s},
+ update(){const r=B.d[7];hot('#wc',r);on('#LG',r);on('#LR',!r&&RUN);hot('#wno',r);hot('#wnc',!r&&RUN);$('#arm').setAttribute('x2',r?520:480);$('#coil').setAttribute('fill',r?'#e0913f':'#b87333');$('#rst').textContent=r?'ENERGISED':'DE-ENERGISED'},
+ async setup(a){a.L('pinMode(relayPin');a.pinMode(7,1);a.L('Serial.begin');a.Serial.begin(9600)},
+ async loop(a){a.L('digitalWrite(relayPin, HIGH)');a.digitalWrite(7,1);a.L('"Relay ON');a.Serial.println('Relay ON : Green LED ON');a.L('delay(2000)',0);await a.delay(2000);
+   a.L('digitalWrite(relayPin, LOW)');a.digitalWrite(7,0);a.L('"Relay OFF');a.Serial.println('Relay OFF: Red LED ON');a.L('delay(2000)',1);await a.delay(2000)},
+ cols:['Time (s)','D7','Relay','Green LED (NO)','Red LED (NC)','Serial monitor'],
+ howto:'Perform experiment logs four relay switchings. Each row is taken the moment D7 changes.',
+ events:4, onWrite(p,v){if(p!==7)return null;return [(B.t/1000).toFixed(1),v?'HIGH':'LOW',v?'Energised':'De-energised',v?'ON':'OFF',v?'OFF':'ON',v?'Relay ON : Green LED ON':'Relay OFF: Red LED ON']},
+ verify(r){const ok=r.every((x,i)=>x[1]===(i%2?'LOW':'HIGH'))&&r.slice(1).every((x,i)=>Math.abs(x[0]-r[i][0]-2)<0.15);return [ok,ok?'Relay toggled every 2 s; green LED (NO) lit while D7 HIGH and red LED (NC) lit while D7 LOW. Matches the manual output table.':'Relay switching did not follow the expected 2 s HIGH/LOW pattern.']}},
+
+{key:'exp3',tab:'3 · Intrusion detection',title:'Experiment 3: Intrusion detection (ultrasonic + piezo + LEDs)',
+ aim:'Measure object distance with the HC-SR04. Object at 100 cm or nearer: LEDs ON, piezo OFF. Beyond 100 cm: LEDs OFF, piezo ON.',
+ comps:'Arduino UNO R3, HC-SR04 ultrasonic sensor, 2 red LEDs, 2 × 220 Ω resistors, piezo buzzer.',
+ conn:[['5V / GND','HC-SR04 VCC / GND'],['D6','HC-SR04 TRIG (output)'],['D5','HC-SR04 ECHO (input)'],['D8','R1 220 Ω → LED1 anode'],['D9','R2 220 Ω → LED2 anode'],['D10','Piezo (+)'],['LED cathodes, piezo (−)','GND']],
+ pins:['D6','D5','D8','D9','D10'],
+ input:{label:'Object distance',min:2,max:330,step:1,val:50,unit:'cm',note:'Drag to move the object in front of the sensor (HC-SR04 range in Tinkercad ≈ 2–330 cm).'},
+ code:`long readUltrasonicCM(int trigPin, int echoPin)
+{
+  pinMode(trigPin, OUTPUT);
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  pinMode(echoPin, INPUT);
+  return 0.01723 * pulseIn(echoPin, HIGH);
+}
+void setup()
+{
+  Serial.begin(9600);
+  pinMode(8, OUTPUT); pinMode(9, OUTPUT); pinMode(10, OUTPUT);
+}
+void loop()
+{
+  long input = readUltrasonicCM(6, 5);
+  Serial.println(input);
+  if (input <= 100) {
+    digitalWrite(8, HIGH); digitalWrite(9, HIGH); digitalWrite(10, LOW);
+  } else {
+    digitalWrite(8, LOW); digitalWrite(9, LOW); digitalWrite(10, HIGH);
+  }
+  delay(100);
+}`,
+ build(){let s=`<rect x="380" y="30" width="120" height="66" rx="6" fill="#1f6fd1"/><circle cx="410" cy="60" r="19" fill="#c9ccd1" stroke="#777" stroke-width="3"/><circle cx="470" cy="60" r="19" fill="#c9ccd1" stroke="#777" stroke-width="3"/>${T(440,24,'HC-SR04')}`;
+  [[404,'VCC'],[428,'TRIG'],[452,'ECHO'],[476,'GND']].forEach(([x,t])=>s+=`<line x1="${x}" y1="96" x2="${x}" y2="106" class="leg"/><text x="${x}" y="92" text-anchor="middle" class="cp" style="font-size:9px">${t}</text>`);
+  s+=T(392,122,'5V','end')+`<line x1="404" y1="106" x2="396" y2="116" stroke="#ff8a7a" stroke-width="2"/>`+gnd(476,106);
+  s+=wire('wt',['D6',[PIN.D6[0],140],[428,140],[428,106]],COL[1])+wire('we',['D5',[PIN.D5[0],146],[452,146],[452,106]],COL[3]);
+  s+=`<g id="waves"><path class="ping" d="M505 40 q12 20 0 40"/><path class="ping" d="M520 34 q16 26 0 52"/></g><line id="ray" x1="500" y1="60" x2="600" y2="60" stroke="#9ff0c4" stroke-dasharray="3 5" stroke-width="1.5"/>
+  <g id="obj"><rect x="0" y="22" width="26" height="76" rx="8" fill="#e6e1d6"/><circle cx="13" cy="16" r="11" fill="#e6e1d6"/></g><text id="dtxt" x="620" y="124" class="big" text-anchor="middle">50 cm</text>`;
+  s+=wire('w8',['D8',[PIN.D8[0],124],[390,124],[390,190]],COL[0])+resV(390,190,226)+led('L8',390,226,'#ff3b30')+gnd(390,270)+T(390,306,'LED1');
+  s+=wire('w9',['D9',[PIN.D9[0],116],[440,116],[440,190]],COL[2])+resV(440,190,226)+led('L9',440,226,'#ff3b30')+gnd(440,270)+T(440,306,'LED2');
+  s+=wire('w10',['D10',[PIN.D10[0],108],[560,108],[560,226]],COL[5])+`<circle cx="560" cy="250" r="24" fill="#1a1a1a" stroke="#555" stroke-width="2"/><circle cx="560" cy="250" r="5" fill="#444"/>`+gnd(560,274)+T(560,310,'Piezo')+cp(532,234,'+','end')+cp(532,284,'−','end')+`<g style="transform-origin:560px 250px"><circle class="snd" id="s1" cx="560" cy="250" r="34" style="transform-origin:560px 250px"/><circle class="snd" id="s2" cx="560" cy="250" r="46" style="transform-origin:560px 250px;animation-delay:.25s"/></g>`;
+  s+=`<rect x="600" y="370" width="140" height="60" rx="10" fill="#0e211d"/>`+T(670,394,'Measured')+`<text id="mtxt" x="670" y="420" text-anchor="middle" class="big">—</text>`;return s},
+ update(){const d=B.inp;const x=520+(d-2)/328*200;$('#obj').setAttribute('transform',`translate(${x},0)`);$('#ray').setAttribute('x2',x);$('#dtxt').textContent=d+' cm';$('#dtxt').setAttribute('x',Math.min(700,x+13));
+   on('#L8',B.d[8]);on('#L9',B.d[9]);hot('#w8',B.d[8]);hot('#w9',B.d[9]);hot('#w10',B.d[10]);$('#s1').classList.toggle('on',!!B.d[10]);$('#s2').classList.toggle('on',!!B.d[10]);tone(B.d[10]);
+   $('#mtxt').textContent=B.meas==null?'—':B.meas+' cm';$('#waves').style.display=RUN?'':'none'},
+ pulse(){return Math.round(B.inp/0.01723)},
+ async setup(a){a.L('Serial.begin');a.Serial.begin(9600);a.L('pinMode(8, OUTPUT)');a.pinMode(8,1);a.pinMode(9,1);a.pinMode(10,1)},
+ async loop(a){a.L('long input');a.L('pinMode(trigPin');a.L('digitalWrite(trigPin, LOW)',0);a.digitalWrite(6,0);a.L('digitalWrite(trigPin, HIGH)');a.digitalWrite(6,1);a.L('digitalWrite(trigPin, LOW)',1);a.digitalWrite(6,0);
+   a.L('return 0.01723');const pw=a.pulseIn(5);B.pw=pw;const input=Math.trunc(0.01723*pw);B.meas=input;
+   a.L('Serial.println(input)');a.Serial.println(input);
+   if(input<=100){a.L('digitalWrite(8, HIGH)');a.digitalWrite(8,1);a.digitalWrite(9,1);a.digitalWrite(10,0)}else{a.L('digitalWrite(8, LOW)');a.digitalWrite(8,0);a.digitalWrite(9,0);a.digitalWrite(10,1)}
+   a.L('delay(100)');await a.delay(100)},
+ cols:['Object distance (cm)','Echo pulse (µs)','Measured (cm)','LED D8','LED D9','Piezo D10','Inference'],
+ howto:'Perform experiment places the object at 8 test distances (both sides of the 100 cm threshold) and records each steady reading.',
+ tests:[20,50,99,100,101,150,250,330],
+ row(){const L=B.d[8];return [B.inp,B.pw,B.meas,L?'ON':'OFF',B.d[9]?'ON':'OFF',B.d[10]?'ON':'OFF',B.meas<=100?'Within 100 cm: LEDs ON':'Beyond 100 cm: buzzer ON']},
+ verify(r){const ok=r.every(x=>(x[2]<=100)===(x[3]==='ON')&&(x[2]<=100)===(x[5]==='OFF')&&Math.abs(x[2]-x[0])<=1);return [ok,ok?'Measured distance matched the set distance within 1 cm at every point. At 100 cm and below both LEDs were ON with the piezo OFF; above 100 cm the LEDs were OFF and the piezo sounded. Matches the manual (object at 50 cm: LEDs ON, piezo OFF).':'Some readings did not follow the 100 cm rule.']}},
+
+{key:'exp4',tab:'4 · DC motor (PWM)',title:'Experiment 4: DC motor speed control with PWM',
+ aim:'Control the speed of a DC motor with a potentiometer: the pot reading on A3 sets the PWM duty on D6, which drives the motor through an NPN transistor.',
+ comps:'Arduino UNO R3, NPN transistor, 800 Ω resistor, DC motor, 9 V battery, 250 kΩ potentiometer.',
+ conn:[['5V','Potentiometer pin 1'],['A3','Potentiometer wiper'],['GND','Potentiometer pin 2'],['D6 (PWM)','800 Ω → NPN base'],['NPN emitter','GND / battery (−)'],['NPN collector','Motor terminal 1'],['Motor terminal 2','9 V battery (+)']],
+ pins:['A3','D6'],
+ input:{label:'Potentiometer (A3 reading)',min:0,max:1023,step:1,val:700,unit:'',note:'Turn the knob. Motor speed in this simulator is modelled as proportional to duty, up to about 20,000 rpm.'},
+ code:`const int poten = A3;
+int var;
+
+void setup()
+{
+  pinMode(6, OUTPUT);
+}
+
+void loop()
+{
+  var = analogRead(poten);
+  int pwmValue = map(var, 0, 1023, 0, 255);
+  analogWrite(6, pwmValue);
+}`,
+ build(){let s=wire('w6',['D6',[PIN.D6[0],128],[392,128],[392,236]],COL[1])+resH(392,470,236)+`<line x1="470" y1="236" x2="490" y2="236" class="leg"/><circle cx="505" cy="236" r="22" fill="none" stroke="#cfd6d3" stroke-width="2"/><line x1="492" y1="220" x2="492" y2="252" stroke="#cfd6d3" stroke-width="3"/><path d="M492 228 L512 212 V176 M492 244 L512 260 V290" stroke="#cfd6d3" stroke-width="2" fill="none"/><path d="M506 252 l8 9 l-11 1z" fill="#cfd6d3"/>`+T(470,276,'NPN','end')+T(430,222,'800 Ω')+gnd(512,290)+cp(486,230,'B','end')+cp(518,190,'C','start')+cp(518,284,'E','start')+cp(544,127,'M1','end')+cp(544,172,'M2','end');
+  s+=`<line x1="512" y1="176" x2="512" y2="158" class="leg"/><line x1="512" y1="158" x2="548" y2="158" class="leg"/><rect x="548" y="118" width="80" height="56" rx="10" fill="#9aa0a6" stroke="#6b7076" stroke-width="2"/><rect x="628" y="140" width="14" height="12" fill="#c9ccd1"/>${T(588,192,'DC motor')}
+  <g id="rot"><circle cx="668" cy="146" r="24" fill="#3a3f44" stroke="#c9ccd1" stroke-width="3"/><path d="M668 124v44M646 146h44" stroke="#ffd36b" stroke-width="4"/></g>
+  <text id="rpm" x="660" y="230" class="big" text-anchor="middle">0 rpm</text>
+  <rect x="640" y="30" width="90" height="56" rx="6" fill="#2a2a2a"/>${T(685,64,'9 V')}<rect x="652" y="22" width="12" height="8" fill="#ccc"/><rect x="704" y="22" width="12" height="8" fill="#ccc"/>
+  <polyline class="w" id="wbat" points="548,132 530,132 530,12 658,12 658,22" stroke="${COL[0]}"/><polyline class="w" points="710,22 710,12 748,12 748,100" stroke="#6b6b6b"/>${gnd(748,100)}${T(648,20,'+','end')}${T(722,20,'−','start')}`;
+  s+=`<circle cx="420" cy="392" r="24" fill="#2a6ccc" stroke="#174a94" stroke-width="2"/><line id="knob" x1="420" y1="392" x2="420" y2="372" stroke="#fff" stroke-width="4" stroke-linecap="round"/>${T(420,360,'Pot 250 kΩ')}${cp(426,434,'W','start')}
+  <line x1="400" y1="414" x2="400" y2="426" class="leg"/><line x1="420" y1="416" x2="420" y2="440" class="leg"/><line x1="440" y1="414" x2="440" y2="426" class="leg"/>${T(392,436,'5V','end')}${gnd(440,426)}`;
+  s+=wire('wa3',['A3',[PIN.A3[0],448],[420,448],[420,440]],COL[4]);
+  s+=`<rect x="520" y="320" width="226" height="126" rx="10" fill="#0a1412" stroke="#24433c"/><polyline id="scope" fill="none" stroke="#9ff0c4" stroke-width="2"/><text id="scl" x="532" y="340" class="lbl">D6 PWM · 980 Hz</text>`;return s},
+ update(dt){const pw=B.pwm[6]??0;const tgt=pw/255*RPM_MAX;B.rpm+=(tgt-B.rpm)*(1-Math.exp(-dt*(RUN?RUN.speed:1)/0.35));if(!RUN)B.rpm*=0;B.ang=(B.ang+B.rpm*dt*0.03)%360;
+   $('#rot').setAttribute('transform',`rotate(${B.ang} 668 146)`);$('#rpm').textContent=Math.round(B.rpm).toLocaleString('en-IN')+' rpm';
+   const k=(-135+B.inp/1023*270)*Math.PI/180;$('#knob').setAttribute('x2',420+20*Math.sin(k));$('#knob').setAttribute('y2',392-20*Math.cos(k));
+   const duty=pw/255;let p=[];for(let c=0;c<4;c++){const x0=534+c*50;p.push(`${x0},430`,`${x0},${duty>0?356:430}`,`${x0+50*duty},${duty>0?356:430}`,`${x0+50*duty},430`)}p.push('734,430');$('#scope').setAttribute('points',p.join(' '));
+   $('#scl').textContent=`D6 PWM · 980 Hz · duty ${(duty*100).toFixed(1)}%`;hot('#w6',pw>0);hot('#wbat',pw>0);hot('#wa3',1)},
+ read(ch){return B.inp},
+ async setup(a){a.L('pinMode(6');a.pinMode(6,1)},
+ async loop(a){a.L('var = analogRead');const v=a.analogRead(3);a.L('int pwmValue');const pw=a.map(v,0,1023,0,255);a.L('analogWrite(6');a.analogWrite(6,pw)},
+ cols:['Pot reading A3','PWM value','Duty cycle (%)','Avg. D6 voltage (V)','Motor speed (rpm)'],
+ howto:'Perform experiment turns the pot through 6 positions and records the PWM value and the steady motor speed at each.',
+ tests:[0,205,410,614,819,1023],
+ row(){const pw=B.pwm[6]??0;return [B.a.A3,pw,(pw/255*100).toFixed(1),(pw/255*5).toFixed(2),Math.round(pw/255*RPM_MAX).toLocaleString('en-IN')]},
+ verify(r){const p=r.map(x=>x[1]);const ok=p.every((v,i)=>v===Math.trunc(r[i][0]*255/1023))&&p.every((v,i)=>!i||v>p[i-1]);return [ok,ok?`PWM value followed map(var, 0, 1023, 0, 255) exactly (0 → 0, 1023 → 255) and motor speed rose with every turn of the pot. Matches the manual: turning the pot changes the motor speed.`:'PWM values did not follow the map() rule.']}},
+
+{key:'exp5',tab:'5 · Smart street light',title:'Experiment 5: Smart street light using LDR',
+ aim:'Deploy a smart street light: the LED switches ON when it is dark and OFF when there is light.',
+ comps:'Arduino UNO R3, LDR (photoresistor), red LED, 2 × 850 Ω resistors.',
+ conn:[['5V','LDR pin 1'],['LDR pin 2','A0 (analog reading)'],['LDR pin 2','R3 850 Ω → GND (voltage divider)'],['D9','R1 850 Ω → LED anode'],['LED cathode','GND']],
+ pins:['A0','D9'],
+ input:{label:'Ambient light',min:0,max:100,step:1,val:20,unit:'%',note:'0 % is night, 100 % is full daylight. The LDR resistance and the A0 reading follow from the 850 Ω divider.'},
+ code:`int sensorPin = A0;
+int sensorValue = 0;
+int led = 9;
+
+void setup() {
+  pinMode(led, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  sensorValue = analogRead(sensorPin);
+  Serial.println(sensorValue);
+  if (sensorValue < 100) {
+    Serial.println("LED light on");
+    digitalWrite(led, HIGH);
+    delay(1000);
+    digitalWrite(led, LOW);
+  } else {
+    digitalWrite(led, LOW);
+  }
+  delay(200);
+}`,
+ build(){let s=`<rect id="dim" x="0" y="0" width="760" height="460" fill="#020814" opacity="0"/><circle id="sun" cx="690" cy="58" r="24" fill="#ffd36b"/><circle id="moonc" cx="702" cy="50" r="22" fill="#020814" opacity="0"/>`;
+  s+=vcc(520,214)+`<line x1="520" y1="214" x2="520" y2="228" class="leg"/><circle cx="520" cy="246" r="18" fill="#e2a24a" stroke="#9b6a24" stroke-width="2"/><path d="M508 238h24l-24 6h24l-24 6h24" stroke="#7a2a12" stroke-width="2" fill="none"/><line x1="520" y1="264" x2="520" y2="300" class="leg"/>${T(546,250,'LDR','start')}<text id="ldrr" x="546" y="270" class="lbl">—</text><circle cx="520" cy="290" r="4" fill="#ffd36b"/>${resV(520,300,360)}${T(536,334,'R3 850 Ω','start')}${gnd(520,360)}`;
+  s+=wire('wa0',['A0',[PIN.A0[0],410],[480,410],[480,290],[520,290]],COL[4]);
+  s+=wire('w9',['D9',[PIN.D9[0],130],[650,130],[650,160]],COL[1])+resV(650,160,206)+T(666,186,'R1 850 Ω','start')+led('LL',650,206,'#ff3b30')+gnd(650,250)+T(650,290,'Street light');
+  s+=`<rect x="600" y="370" width="140" height="60" rx="10" fill="#0e211d"/>`+T(670,394,'A0 reading')+`<text id="a0t" x="670" y="420" text-anchor="middle" class="big">—</text>`;return s},
+ update(){const L=B.inp;$('#dim').setAttribute('opacity',((100-L)/100*0.6).toFixed(2));$('#moonc').setAttribute('opacity',L<40?1:0);$('#sun').setAttribute('fill',L<40?'#e6edf5':'#ffd36b');
+   $('#ldrr').textContent=ohm(ldrOhm(L));$('#a0t').textContent=B.a.A0??'—';on('#LL',B.d[9]);hot('#w9',B.d[9])},
+ read(){return ldrA0(B.inp)},
+ async setup(a){a.L('pinMode(led');a.pinMode(9,1);a.L('Serial.begin');a.Serial.begin(9600)},
+ async loop(a){a.L('sensorValue = analogRead');const v=a.analogRead(0);B.last=v;a.L('Serial.println(sensorValue)');a.Serial.println(v);
+   if(v<100){a.L('"LED light on"');a.Serial.println('LED light on');a.L('digitalWrite(led, HIGH)');a.digitalWrite(9,1);a.L('delay(1000)');await a.delay(1000);a.L('digitalWrite(led, LOW)',0);a.digitalWrite(9,0)}
+   else{a.L('digitalWrite(led, LOW)',1);a.digitalWrite(9,0)}a.L('delay(200)');await a.delay(200)},
+ cols:['Ambient light (%)','LDR resistance','A0 reading','Condition','Street light (D9)','Serial monitor'],
+ howto:'Perform experiment dims the light from full daylight to night in 7 steps and records the A0 reading and the LED each time.',
+ tests:[100,75,60,54,53,30,0],
+ row(){const v=B.last;return [B.inp,ohm(ldrOhm(B.inp)),v,v<100?'Dark (< 100)':'Bright (≥ 100)',v<100?'ON (1 s pulses)':'OFF',v<100?`${v} / LED light on`:String(v)]},
+ verify(r){const ok=r.every(x=>(x[2]<100)===x[4].startsWith('ON'));const sw=r.find(x=>x[2]<100);return [ok,ok?`LED stayed OFF in bright light and switched ON once the A0 reading fell below 100${sw?` (first at ${sw[0]} % light, A0 = ${sw[2]})`:''}, printing "LED light on". Note: the program turns the LED OFF for 200 ms each loop, so at night it shows as 1 s pulses. Matches the manual.`:'LED state did not follow the A0 < 100 rule.']}},
+
+{key:'exp6',tab:'6 · Waste sorter',title:'Experiment 6: Classify dry and wet waste with a moisture sensor',
+ aim:'Classify waste with a moisture sensor. LED on D7 = dry, D6 = moist, D5 = wet.',
+ comps:'Arduino UNO R3, soil moisture sensor, 3 red LEDs, 3 × 220 Ω resistors.',
+ conn:[['Sensor VCC / GND','5V / GND'],['Sensor SIG','A0'],['D7','R1 220 Ω → LED1 (dry)'],['D6','R2 220 Ω → LED2 (moist)'],['D5','R3 220 Ω → LED3 (wet)'],['LED cathodes','GND']],
+ pins:['A0','D7','D6','D5'],
+ input:{label:'Sensor reading A0',min:0,max:539,step:1,val:167,unit:'',note:'Raw value from the soil moisture sensor (0–539 in Tinkercad). 7 ≈ 1.30 %, 167 ≈ 30.98 %, 511 ≈ 94.81 %.'},
+ code:`int moistureValue;
+float moisture_percentage;
+
+void setup() {
+  pinMode(7, OUTPUT);
+  pinMode(6, OUTPUT);
+  pinMode(5, OUTPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  moistureValue = analogRead(A0);
+  moisture_percentage = ((moistureValue / 539.00) * 100);
+  if (moisture_percentage > 0 && moisture_percentage < 25) {
+    digitalWrite(7, HIGH); digitalWrite(6, LOW); digitalWrite(5, LOW);
+  }
+  if (moisture_percentage > 25 && moisture_percentage < 80) {
+    digitalWrite(7, LOW); digitalWrite(6, HIGH); digitalWrite(5, LOW);
+  }
+  if (moisture_percentage > 80 && moisture_percentage < 100) {
+    digitalWrite(7, LOW); digitalWrite(6, LOW); digitalWrite(5, HIGH);
+  }
+  Serial.print("\\nMoisture Value : ");
+  Serial.print(moisture_percentage);
+  Serial.print("%");
+  delay(1000);
+}`,
+ build(){let s='';[[5,400,'WET',120,4],[6,450,'MOIST',112,2],[7,500,'DRY',104,0]].forEach(([p,x,t,ry,c])=>{s+=wire('w'+p,['D'+p,[PIN['D'+p][0],ry],[x,ry],[x,160]],COL[c])+resV(x,160,200)+led('L'+p,x,200,'#ff3b30')+gnd(x,244)+T(x,284,t)});
+  s+=`<path d="M560 330 h170 l-14 100 h-142z" fill="#5a6470"/><path id="waste" d="M566 346 h158 l-11 78 h-136z" fill="#d8c49a"/><g id="drops" opacity="0"><circle cx="600" cy="380" r="4" fill="#6fb6ff"/><circle cx="650" cy="400" r="5" fill="#6fb6ff"/><circle cx="690" cy="372" r="4" fill="#6fb6ff"/><circle cx="625" cy="410" r="3" fill="#6fb6ff"/></g>
+  <rect x="628" y="226" width="46" height="74" rx="4" fill="#20262c"/>${T(651,320,'')}<path d="M636 300 v96 M666 300 v96" stroke="#d9b46a" stroke-width="7" stroke-linecap="round"/>
+  <line x1="640" y1="226" x2="640" y2="216" class="leg"/><line x1="651" y1="226" x2="651" y2="216" class="leg"/><line x1="662" y1="226" x2="662" y2="216" class="leg"/>${T(634,210,'5V','end')}${gnd(662,206)}${['VCC','SIG','GND'].map((t,i)=>`<text class="cp" style="font-size:9px" transform="translate(${636.5+i*11},232) rotate(90)">${t}</text>`).join('')}${T(590,262,'Moisture','end')}${T(590,280,'sensor','end')}`;
+  s+=wire('wa0',['A0',[PIN.A0[0],450],[750,450],[750,196],[651,196],[651,216]],COL[4]);
+  s+=`<rect x="330" y="340" width="200" height="70" rx="10" fill="#0e211d"/>`+T(430,364,'Moisture')+`<text id="mp" x="430" y="394" text-anchor="middle" class="big">—</text>`;return s},
+ update(){const m=B.inp/539;const c=(a,b)=>Math.round(a+(b-a)*m);$('#waste').setAttribute('fill',`rgb(${c(216,74)},${c(196,52)},${c(154,34)})`);$('#drops').setAttribute('opacity',m>0.6?(m-0.6)*2.5:0);
+   for(const p of [5,6,7]){on('#L'+p,B.d[p]);hot('#w'+p,B.d[p])}$('#mp').textContent=B.pct==null?'—':B.pct.toFixed(2)+' %'},
+ read(){return B.inp},
+ async setup(a){a.L('pinMode(7');a.pinMode(7,1);a.pinMode(6,1);a.pinMode(5,1);a.L('Serial.begin');a.Serial.begin(9600)},
+ async loop(a){a.L('moistureValue = analogRead');const v=a.analogRead(0);a.L('moisture_percentage = (');const m=Math.fround(Math.fround(v/539.00)*100);B.pct=m;B.branch='none';
+   a.L('> 0 &&');if(m>0&&m<25){a.L('digitalWrite(7, HIGH)');a.digitalWrite(7,1);a.digitalWrite(6,0);a.digitalWrite(5,0);B.branch='dry'}
+   a.L('> 25 &&');if(m>25&&m<80){a.L('digitalWrite(6, HIGH)');a.digitalWrite(7,0);a.digitalWrite(6,1);a.digitalWrite(5,0);B.branch='moist'}
+   a.L('> 80 &&');if(m>80&&m<100){a.L('digitalWrite(5, HIGH)');a.digitalWrite(7,0);a.digitalWrite(6,0);a.digitalWrite(5,1);B.branch='wet'}
+   a.L('Moisture Value');a.Serial.print('\nMoisture Value : ');a.Serial.print(m.toFixed(2));a.Serial.print('%');a.L('delay(1000)');await a.delay(1000)},
+ cols:['A0 reading','Moisture (%)','LED D7 (dry)','LED D6 (moist)','LED D5 (wet)','Classification'],
+ howto:'Perform experiment feeds 11 sensor readings, including the three from the manual and the 0 %, 25 %, 80 % and 100 % boundaries, and records the LEDs.',
+ tests:[7,67,134,135,167,300,431,432,511,539,0],
+ row(){const lit=B.d[7]?'Dry waste':B.d[6]?'Moist waste':B.d[5]?'Wet waste':'—';return [B.a.A0,B.pct.toFixed(2),B.d[7]?'ON':'OFF',B.d[6]?'ON':'OFF',B.d[5]?'ON':'OFF',B.branch==='none'?`No condition true; LEDs unchanged (${lit})`:lit]},
+ verify(r){const g=v=>r.find(x=>x[0]===v);const ok=g(7)?.[5]==='Dry waste'&&g(167)?.[5]==='Moist waste'&&g(511)?.[5]==='Wet waste';const edge=r.filter(x=>x[5].startsWith('No condition')).map(x=>x[1]+' %');return [ok,ok?`Readings 1.30 %, 30.98 % and 94.81 % lit the dry (D7), moist (D6) and wet (D5) LEDs, matching the manual.${edge.length?` Observation: at ${edge.join(', ')} no if-condition is true (the code uses strict > and <), so the LEDs keep their previous state.`:''}`:'Classification did not match the manual values.']}},
+{key:'exp7',tab:'7 · pH meter',title:'Experiment 7: Read the pH value of milk, lime and water',
+ aim:'Develop a program to read the pH value of various substances such as milk, lime and water. A potentiometer on A0 simulates the pH sensor output (Tinkercad has no pH probe).',
+ comps:'Arduino UNO R3, potentiometer (simulating the pH sensor module), jumper wires.',
+ conn:[['5V','Potentiometer VCC pin'],['GND','Potentiometer GND pin'],['A0','Potentiometer middle pin (wiper)']],
+ pins:['A0'],
+ input:{label:'Potentiometer (A0 reading)',min:0,max:1023,step:1,val:475,unit:'',note:'Turn the knob to simulate the probe in different samples, or use a preset.',presets:[['Lime juice',147],['Milk',475],['Water',512]]},
+ code:`int potPin = A0;
+float pH_value;
+
+void setup()
+{
+  Serial.begin(9600);
+  Serial.println("Turn potentiometer to simulate pH of milk, lime, or water.");
+}
+
+void loop()
+{
+  int analogValue = analogRead(potPin); // 0-1023
+  pH_value = map(analogValue, 0, 1023, 0, 140) / 10.0; // Map to 0-14
+  Serial.print("Simulated pH value: ");
+  Serial.println(pH_value, 1); // 1 decimal place
+  delay(1000);
+}`,
+ build(){const PH=['#e6261f','#ec4a26','#eb7532','#f29c35','#f7d038','#d6e03f','#a3e048','#49da9a','#34bbe6','#3a8bdc','#4355db','#5a48cf','#6a3fbf','#7a35b0','#8b2fa3'];
+  let s=PH.slice(0,14).map((c,i)=>`<rect x="${330+i*29}" y="40" width="29" height="26" fill="${c}"/>`).join('')+[0,7,14].map(v=>T(330+v*29,84,v)).join('')+T(330,30,'pH scale','start')+T(536,30,'neutral')+`<path id="mk" d="M0 0 l-8 -12 h16z" fill="#fff" stroke="#0008"/>`;
+  s+=`<path d="M560 130 v150 a14 14 0 0 0 14 14 h112 a14 14 0 0 0 14 -14 v-150" fill="#ffffff18" stroke="#dfe7e4" stroke-width="3"/><rect id="liq" x="563" y="190" width="134" height="101" rx="10" fill="#f5f1e6" opacity=".9"/>
+  <rect x="612" y="96" width="36" height="150" rx="8" fill="#2b2b2b"/><rect x="620" y="240" width="20" height="24" rx="8" fill="#c9ccd1"/>${T(630,90,'pH probe')}<text id="sub" x="630" y="320" text-anchor="middle" class="lbl">Sample</text>`;
+  s+=`<circle cx="420" cy="392" r="24" fill="#2a6ccc" stroke="#174a94" stroke-width="2"/><line id="knob" x1="420" y1="392" x2="420" y2="372" stroke="#fff" stroke-width="4" stroke-linecap="round"/>${T(420,360,'Potentiometer')}${cp(426,434,'W','start')}
+  <line x1="400" y1="414" x2="400" y2="426" class="leg"/><line x1="420" y1="416" x2="420" y2="440" class="leg"/><line x1="440" y1="414" x2="440" y2="426" class="leg"/>${T(392,436,'5V','end')}${gnd(440,426)}`;
+  s+=wire('wa0',['A0',[PIN.A0[0],448],[420,448],[420,440]],COL[4]);
+  s+=`<rect x="600" y="360" width="140" height="70" rx="10" fill="#0e211d"/>`+T(670,384,'pH value')+`<text id="pht" x="670" y="414" text-anchor="middle" class="big">—</text>`;return s},
+ update(){const PH=['#e6261f','#ec4a26','#eb7532','#f29c35','#f7d038','#d6e03f','#a3e048','#49da9a','#34bbe6','#3a8bdc','#4355db','#5a48cf','#6a3fbf','#7a35b0','#8b2fa3'];
+   const k=(-135+B.inp/1023*270)*Math.PI/180;$('#knob').setAttribute('x2',420+20*Math.sin(k));$('#knob').setAttribute('y2',392-20*Math.cos(k));
+   const ph=B.ph;$('#pht').textContent=ph==null?'—':ph.toFixed(1);
+   if(ph!=null){$('#mk').setAttribute('transform',`translate(${330+ph*29},38)`);$('#liq').setAttribute('fill',PH[Math.round(ph)]);$('#sub').textContent=ph<6?'Acidic sample':ph<6.95?'Slightly acidic':ph<=7.05?'Neutral sample':'Basic sample'}
+   else{$('#mk').setAttribute('transform','translate(-50,-50)');$('#liq').setAttribute('fill','#f5f1e6');$('#sub').textContent='Sample'}hot('#wa0',RUN)},
+ read(){return B.inp},
+ async setup(a){a.L('Serial.begin');a.L('Turn potentiometer');a.Serial.println('Turn potentiometer to simulate pH of milk, lime, or water.')},
+ async loop(a){a.L('int analogValue');const v=a.analogRead(0);a.L('pH_value = map');const ph=a.map(v,0,1023,0,140)/10;B.ph=ph;a.L('Serial.print(');a.Serial.print('Simulated pH value: ');a.L('Serial.println(pH_value');a.Serial.println(ph.toFixed(1));a.L('delay(1000)');await a.delay(1000)},
+ cols:['A0 reading','pH value','Nature','Likely sample','Serial monitor'],
+ howto:'Perform experiment sets the knob for lime juice, milk and water, plus both ends of the range, and records the pH printed each time.',
+ tests:[0,147,475,512,1023],
+ row(){const p=B.ph;const nat=p<6?'Acidic':p<6.95?'Slightly acidic':p<=7.05?'Neutral':'Basic';const sub=Math.abs(p-2)<0.3?'Lime juice':Math.abs(p-6.5)<0.2?'Milk':Math.abs(p-7)<0.2?'Water':'—';return [B.a.A0,p.toFixed(1),nat,sub,'Simulated pH value: '+p.toFixed(1)]},
+ verify(r){const g=v=>r.find(x=>x[0]===v)?.[1];const ok=g(147)==='2.0'&&g(475)==='6.5'&&g(512)==='7.0'&&g(0)==='0.0'&&g(1023)==='14.0';return [ok,ok?'pH followed map(analogValue, 0, 1023, 0, 140) / 10.0: lime juice read 2.0 (acidic), milk 6.5 (slightly acidic), water 7.0 (neutral), and the knob covered the full 0–14 range. Matches the manual.':'pH readings did not follow the map() rule.']}}
+
+];
+
+/* ---------- runtime ---------- */
+function resetBoard(){B.d=Array(14).fill(0);B.pwm=Array(14).fill(null);B.a={};B.t=0;B.loops=0;B.line=-1;B.meas=null;B.pw=null;B.pct=null;B.rpm=0;B.last=null;B.ph=null}
+function api(id){
+  const chk=()=>{if(!RUN||RUN.id!==id)throw STOP};
+  const lines=EXP.code.split('\n');
+  const out=t=>{B.serial+=t;if(B.serial.length>6000)B.serial=B.serial.slice(-4000);B.tx=performance.now()};
+  return{
+    L(str,n=0){chk();let k=-1;for(let i=0;i<lines.length;i++)if(lines[i].includes(str)&&k<0&&n--===0)k=i;if(k>=0)B.line=k},
+    pinMode(){chk()},
+    digitalWrite(p,v){chk();const o=B.d[p];B.d[p]=v?1:0;B.pwm[p]=null;if(REC&&EXP.onWrite&&o!==B.d[p]){const r=EXP.onWrite(p,B.d[p]);if(r)pushRow(r)}},
+    analogWrite(p,v){chk();B.pwm[p]=v;B.d[p]=v>0?1:0},
+    analogRead(ch){chk();const v=Math.max(0,Math.min(1023,Math.round(EXP.read(ch))));B.a['A'+ch]=v;return v},
+    pulseIn(){chk();return EXP.pulse()},
+    map:(x,a,b,c,d)=>Math.trunc((x-a)*(d-c)/(b-a))+c,
+    Serial:{begin(){},print(x){out(String(x))},println(x=''){out(String(x)+'\n')}},
+    async delay(ms){chk();let left=ms;while(left>0){if(RUN.paused){await sleep(60);chk();continue}const st=Math.min(left,40*RUN.speed);await sleep(st/RUN.speed);chk();B.t+=st;left-=st}}
+  };
+}
+async function start(){
+  stop();const id=performance.now()+Math.random();RUN={id,paused:false,speed:+$('#speed').value};resetBoard();
+  const a=api(id);try{await EXP.setup(a);for(;;){const t0=B.t;await EXP.loop(a);B.loops++;if(B.t===t0)await a.delay(10)}}catch(e){if(e!==STOP)console.error(e)}
+}
+function stop(){RUN=null;tone(0)}
+const waitLoops=async n=>{const t=B.loops+n;while(RUN&&B.loops<t)await sleep(20)};
+const on=(s,v)=>$(s)?.classList.toggle('on',!!v);
+const hot=(s,v)=>$(s)?.classList.toggle('hot',!!v);
+
+/* piezo sound */
+let ac,osc;
+function tone(v){const want=v&&RUN&&$('#sound').checked&&!RUN.paused;try{if(want&&!osc){ac=ac||new AudioContext();osc=ac.createOscillator();const g=ac.createGain();g.gain.value=0.05;osc.frequency.value=2000;osc.connect(g).connect(ac.destination);osc.start()}else if(!want&&osc){osc.stop();osc=null}}catch(e){}}
+
+/* ---------- UI ---------- */
+function pushRow(r){rows.push(r);drawRows();if(REC&&--REC.left<=0){REC.done();REC=null}}
+function drawRows(){$('#obs').innerHTML=`<thead><tr>${EXP.cols.map(c=>`<th>${esc(c)}</th>`).join('')}</tr></thead><tbody>${rows.length?rows.map(r=>`<tr>${r.map(c=>`<td class="${/^[-\d.,]+$/.test(String(c))?'n':''}">${esc(c)}</td>`).join('')}</tr>`).join(''):`<tr><td colspan="${EXP.cols.length}" class="empty">No readings yet. Press Perform experiment, or run the circuit and press Record reading.</td></tr>`}</tbody>`}
+function select(i){
+  stop();REC=null;EXP=X[i];rows=[];B.inp=EXP.input?.val??0;resetBoard();
+  $('#tabs').querySelectorAll('button').forEach((b,j)=>b.setAttribute('aria-selected',i===j));
+  $('#svg').innerHTML=`<defs>${LEDDEFS}</defs>`+arduino()+EXP.build();
+  $('#code').innerHTML=EXP.code.split('\n').map((l,k)=>`<div id="c${k}"><i>${k+1}</i>${esc(l)}</div>`).join('');
+  $('#codeName').textContent=EXP.key+'.ino';B.serial='';$('#serial').textContent='';
+  $('#title').textContent=EXP.title;$('#aim').textContent='Aim: '+EXP.aim;$('#comps').textContent=EXP.comps;$('#work').innerHTML=(WORK[EXP.key]||[]).map(t=>`<li>${esc(t)}</li>`).join('');$('#howto').textContent=EXP.howto;
+  $('#conn').innerHTML=`<thead><tr><th>From</th><th>To / purpose</th></tr></thead><tbody>${EXP.conn.map(([a,b])=>`<tr><td><b>${esc(a)}</b></td><td>${esc(b)}</td></tr>`).join('')}</tbody>`;
+  const I=EXP.input;$('#inputs').innerHTML=I?`<div class="inp"><label for="inp">${esc(I.label)}<output id="inpv"></output></label><input type="range" id="inp" min="${I.min}" max="${I.max}" step="${I.step}" value="${I.val}"><small>${esc(I.note)}</small>${I.presets?`<div class="ctl" style="margin-top:6px">${I.presets.map(([l,v])=>`<button class="btn" data-pv="${v}">${esc(l)}</button>`).join('')}</div>`:''}</div>`:'';
+  if(I){$('#inp').addEventListener('input',e=>{B.inp=+e.target.value;showInp()});showInp()}
+  $('#inputs').querySelectorAll('[data-pv]').forEach(b=>b.addEventListener('click',()=>setInp(+b.dataset.pv)));
+  $('#rec').disabled=!EXP.row;$('#rec').style.opacity=EXP.row?1:.5;
+  $('#pins').innerHTML=EXP.pins.map(p=>`<span class="chip" id="pin${p}">${p}</span>`).join('');
+  $('#verdict').innerHTML='';drawRows();$('#run').textContent='Run';
+  if(location.hash!=='#'+EXP.key)history.replaceState(null,'','#'+EXP.key);
+}
+function showInp(){const I=EXP.input;let t=B.inp+(I.unit?' '+I.unit:'');if(EXP.key==='exp6')t=`${B.inp} (${(B.inp/539*100).toFixed(2)} %)`;if(EXP.key==='exp7')t=`${B.inp} → pH ${(Math.trunc(B.inp*140/1023)/10).toFixed(1)}`;if(EXP.key==='exp5')t=`${B.inp} % · A0 ≈ ${ldrA0(B.inp)}`;$('#inpv').textContent=t}
+function setInp(v){B.inp=v;if($('#inp')){$('#inp').value=v;showInp()}}
+
+let last=performance.now(),lastSer='';
+function frame(now){const dt=Math.min(0.1,(now-last)/1000);last=now;
+  if(EXP){try{EXP.update(dt)}catch(e){}
+    $('#ledL').setAttribute('fill',B.d[13]?'#ffb020':'#6b5a2a');$('#ledTX').setAttribute('fill',now-B.tx<80?'#ffb020':'#6b5a2a');
+    document.querySelectorAll('#code .cur').forEach(e=>e.classList.remove('cur'));if(RUN&&B.line>=0)$('#c'+B.line)?.classList.add('cur');
+    for(const p of EXP.pins){const el=$('#pin'+p);if(!el)continue;let t,h=0;if(p[0]==='A'){t=`${p} = ${B.a[p]??'—'}`}else{const n=+p.slice(1);if(B.pwm[n]!=null){t=`${p} PWM ${B.pwm[n]}`;h=B.pwm[n]>0}else{t=`${p} ${B.d[n]?'HIGH':'LOW'}`;h=B.d[n]}}el.textContent=t;el.classList.toggle('hi',!!h)}
+    $('#clock').textContent=`t = ${(B.t/1000).toFixed(1)} s`;
+    if(B.serial!==lastSer){lastSer=B.serial;const s=$('#serial');s.textContent=B.serial;s.scrollTop=s.scrollHeight}}
+  requestAnimationFrame(frame)}
+
+async function perform(){
+  const btn=$('#auto');btn.disabled=true;btn.textContent='Performing…';rows=[];drawRows();$('#verdict').innerHTML='';
+  if(+$('#speed').value<4)$('#speed').value='4';
+  const exp=EXP;
+  try{
+    if(exp.tests){if(!RUN)start();await sleep(50);for(const v of exp.tests){if(EXP!==exp)return;setInp(v);await waitLoops(2);if(EXP!==exp)return;pushRow(exp.row())}}
+    else{await new Promise(res=>{REC={left:exp.events,done:res};start()})}
+    if(EXP!==exp)return;const [ok,msg]=exp.verify(rows);$('#verdict').innerHTML=`<div class="verdict ${ok?'':'bad'}"><b>${ok?'Result: verified.':'Result: check readings.'}</b> ${esc(msg)}</div>`;
+  }finally{btn.disabled=false;btn.textContent='Perform experiment'}
+}
+
+$('#tabs').innerHTML=X.map((e,i)=>`<button role="tab" data-i="${i}">${esc(e.tab)}</button>`).join('');
+$('#tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)select(+b.dataset.i)});
+$('#tabs').addEventListener('keydown',e=>{if(e.key!=='ArrowRight'&&e.key!=='ArrowLeft')return;const i=(X.indexOf(EXP)+(e.key==='ArrowRight'?1:X.length-1))%X.length;select(i);$('#tabs').children[i].focus()});
+$('#run').addEventListener('click',()=>{if(RUN&&RUN.paused){RUN.paused=false;return}start()});
+$('#pause').addEventListener('click',()=>{if(RUN){RUN.paused=!RUN.paused;$('#pause').textContent=RUN.paused?'Resume':'Pause';tone(0)}});
+$('#reset').addEventListener('click',()=>{stop();REC=null;resetBoard();B.serial='';$('#pause').textContent='Pause'});
+$('#speed').addEventListener('change',()=>{if(RUN)RUN.speed=+$('#speed').value});
+$('#clrSer').addEventListener('click',()=>{B.serial=''});
+$('#rec').addEventListener('click',()=>{if(!EXP.row)return;if(!RUN||!B.loops){$('#verdict').innerHTML='<div class="verdict bad">Run the circuit first, then record.</div>';return}pushRow(EXP.row())});
+$('#clr').addEventListener('click',()=>{rows=[];drawRows();$('#verdict').innerHTML=''});
+$('#auto').addEventListener('click',perform);
+$('#copy').addEventListener('click',async()=>{const csv=[EXP.cols,...rows].map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');try{await navigator.clipboard.writeText(csv);$('#copy').textContent='Copied'}catch(e){$('#copy').textContent='Copy blocked'}setTimeout(()=>$('#copy').textContent='Copy as CSV',1500)});
+const WORK={"exp1": ["setup() makes pins 2 to 6 outputs.", "Forward loop: each pin from 2 to 6 goes HIGH for 1 s (current flows pin → LED → 220 Ω → GND, the LED glows), then LOW for 0.1 s.", "Reverse loop: pins 5 down to 2 do the same, so the light runs back without repeating LED 5.", "One cycle is 9 steps × 1.1 s = 9.9 s. The resistor keeps the current near 14 mA, safe for the LED and the pin."], "exp2": ["A relay is a switch worked by an electromagnet. Current in its coil pulls the moving contact (COM) across.", "D7 HIGH energises the coil: COM joins NO, 5 V reaches the green LED. Serial prints \"Relay ON : Green LED ON\".", "D7 LOW releases it: a spring returns COM to NC and the red LED lights. Serial prints \"Relay OFF: Red LED ON\".", "The states swap every 2 s. On real hardware use a relay module, because a bare coil needs about 70 mA, more than a pin gives."], "exp3": ["TRIG (D6) gets a 10 µs HIGH pulse; the HC-SR04 sends eight 40 kHz ultrasound pulses.", "ECHO (D5) stays HIGH until the reflection returns; pulseIn() measures that time in µs.", "Distance = time × 0.01723 cm (speed of sound, halved for the round trip). 2902 µs → 50 cm.", "At 100 cm or less, D8 and D9 light both LEDs and the piezo is off; beyond 100 cm the LEDs go off and D10 sounds the piezo. It repeats every 100 ms."], "exp4": ["The potentiometer is a voltage divider; analogRead(A3) turns its 0–5 V wiper into 0–1023.", "map(var, 0, 1023, 0, 255) scales it to a PWM value.", "analogWrite(6, value) switches D6 about 980 times a second; duty cycle = value / 255, so 128 gives 50 % and an average of 2.5 V.", "The pin cannot power a motor, so D6 drives an NPN transistor through 800 Ω; the transistor switches the 9 V battery through the motor. More duty cycle means more speed.", "Join the Arduino GND and the battery minus. On real hardware add a diode across the motor."], "exp5": ["An LDR has low resistance in light (about 500 Ω) and high resistance in the dark (up to about 180 kΩ).", "With the 850 Ω resistor it forms a divider: A0 voltage = 5 × 850 / (850 + LDR). Bright gives a high reading, dark a low one.", "If the reading is below 100 (LDR above about 7.8 kΩ), the program prints \"LED light on\" and lights D9 for 1 s.", "Otherwise D9 stays off. The loop repeats every 200 ms, so at night the LED shows as 1 s pulses."], "exp6": ["The moisture sensor conducts better when the material is wet, so its SIG voltage rises with moisture (0–539 in Tinkercad).", "moisture % = reading / 539.00 × 100 (the .00 keeps the decimal).", "0–25 % lights D7 (dry), 25–80 % lights D6 (moist), 80–100 % lights D5 (wet). The value is printed every 1 s.", "The conditions use strict < and >, so at exactly 25 % or 80 % no LED changes. Try it with the slider."], "exp7": ["Tinkercad has no pH probe, so a potentiometer gives the 0–5 V a pH module would.", "analogRead(A0) gives 0–1023; map(value, 0, 1023, 0, 140) / 10.0 gives pH 0.0–14.0 with one decimal.", "Below 7 is acidic, 7 is neutral, above 7 is basic. Lime juice ≈ 2.0, milk ≈ 6.5, water = 7.0.", "The pH is printed every 1 s. Use the Lime, Milk and Water buttons to try each sample."]};
+const fromHash=()=>{const i=X.findIndex(e=>'#'+e.key===location.hash);select(i<0?0:i)};
+window.addEventListener('hashchange',()=>{if(location.hash!=='#'+EXP?.key)fromHash()});
+fromHash();requestAnimationFrame(frame);
+window.__sim={X,B,select,perform,get rows(){return rows}};
+}
+</script>
+</body>
+</html>

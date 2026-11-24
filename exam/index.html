@@ -167,7 +167,7 @@ td.n{text-align:right;font-family:"IBM Plex Mono",monospace;white-space:nowrap}
     <h2 id="g3t">Type your program</h2>
     <p class="note" style="margin:0">Type the complete Arduino sketch. Comments and spacing are not counted. You need <span class="cfgPass">60</span> % or more to open the test bench. Pasting is disabled.</p>
     <textarea id="typed" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Your program"></textarea>
-    <div class="bar"><button class="btn pri" id="g3check">Check my program</button><span class="note" id="g3att" style="flex:1"></span><button class="btn" id="g3bypass">Bypass</button></div>
+    <div class="bar"><button class="btn pri" id="g3check">Check my program</button><span class="note" id="g3att" style="flex:1"></span></div>
     <div class="meter" id="meter" hidden><i></i></div>
     <div id="g3msg" class="gmsg" role="status"></div>
     <div class="bar"><button class="btn acc" id="g3go" hidden>Open test bench</button></div>
@@ -241,9 +241,6 @@ td.n{text-align:right;font-family:"IBM Plex Mono",monospace;white-space:nowrap}
 </div>
 
 <div id="cwarn" class="modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="ct"><div class="mbox"><h2 id="ct">Copy and paste is not allowed</h2><p id="cmsg"></p><button class="btn red" id="cok">OK, I will type it myself</button></div></div>
-<div id="pwbox" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="pt"><div class="mbox" style="border-color:var(--teal)"><h2 id="pt" style="color:var(--teal2)">Faculty bypass</h2><p>Enter the faculty password to skip the typing check and open the test bench.</p>
-<input type="password" id="pw" autocomplete="off" style="font:18px 'IBM Plex Sans',sans-serif;min-height:48px;width:100%;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:0 12px;margin-bottom:8px">
-<p id="pwmsg" class="err" style="min-height:1.5em;margin:0 0 10px"></p><div class="bar"><button class="btn pri" id="pwok">Unlock</button><button class="btn" id="pwcancel">Cancel</button></div></div></div>
 <div id="vwarn" class="modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="vt" aria-describedby="vmsg"><div class="mbox"><h2 id="vt">Warning: tab switch detected</h2><p id="vmsg"></p><button class="btn red" id="vok">I understand, return to the exam</button></div></div>
 <script>
 {
@@ -736,7 +733,7 @@ function applyCtl(c){if(!ST.usn||ST.stage==='login')return;let ch=false;
   if(c.revoked&&ST.stage!=='revoked'){ST.revokedAt=c.revokedAt||nowT();show('revoked');return}
   if((c.bypassN||0)>(ST.appliedB||0)){ST.appliedB=c.bypassN;if(c.bypassExp!=null)ST.exp=c.bypassExp;ch=true;
     if(ST.exp!=null){ST.bypass={at:clock(),by:'panel',typedMatch:ST.typed?matchPct(ST.typed,X[ST.exp].code):0};ST.match=ST.bypass.typedMatch;
-      if(['pick','code'].includes(ST.stage)){$('#pwbox').hidden=true;show('test')}}}
+      if(['pick','code'].includes(ST.stage)){show('test')}}}
   if(ch){persist();showBadge();if(VIEW==='student'&&ST.stage==='code')show('code')}}
 
 (async()=>{try{let d=null,u=null;
@@ -798,13 +795,8 @@ const ta=$('#typed');
 function cpWarn(kind){ST.cp=(ST.cp||[]);ST.cp.push({kind,at:clock(),clock:nowT()});persist();
   $('#cmsg').innerHTML=`You tried to <b>${esc(kind)}</b>. Copying and pasting code is not allowed in this exam. This attempt is recorded on your score sheet (${ST.cp.length} time${ST.cp.length>1?'s':''} so far).`;$('#cwarn').hidden=false;$('#cok').focus()}
 const cpOn=()=>VIEW==='student'&&['code','test'].includes(ST.stage)&&!ST.submitted;
-['copy','cut','paste'].forEach(t=>document.addEventListener(t,e=>{if(!cpOn()||e.target.id==='pw'||e.target.id==='fpw')return;e.preventDefault();cpWarn(t)},true));
+['copy','cut','paste'].forEach(t=>document.addEventListener(t,e=>{if(!cpOn()||e.target.id==='fpw')return;e.preventDefault();cpWarn(t)},true));
 $('#cok').addEventListener('click',()=>{$('#cwarn').hidden=true;if(ST.stage==='code')ta.focus()});
-/* password bypass on the student's screen */
-$('#g3bypass').addEventListener('click',()=>{$('#pw').value='';$('#pwmsg').textContent='';$('#pwbox').hidden=false;$('#pw').focus()});
-$('#pwcancel').addEventListener('click',()=>{$('#pwbox').hidden=true});
-async function tryPw(){$('#pwmsg').textContent='Checking…';const a=await apiAuth('bypass',$('#pw').value);if(a.error){$('#pwmsg').textContent=a.error;return}$('#pwmsg').textContent='';if(a.ok){ST.bypass={at:clock(),by:'password',typedMatch:ST.typed?matchPct(ST.typed,X[ST.exp].code):0};ST.match=ST.bypass.typedMatch;$('#pwbox').hidden=true;show('test')}else{$('#pwmsg').textContent='Wrong password.';$('#pw').select()}}
-$('#pwok').addEventListener('click',tryPw);$('#pw').addEventListener('keydown',e=>{if(e.key==='Enter')tryPw();if(e.key==='Escape')$('#pwbox').hidden=true});
 ta.addEventListener('drop',e=>{e.preventDefault();cpWarn('drop text into the editor')});
 ta.addEventListener('keydown',e=>{if(e.key==='Tab'){e.preventDefault();const s=ta.selectionStart;ta.setRangeText('  ',s,ta.selectionEnd,'end')}});
 ta.addEventListener('input',()=>{ST.typed=ta.value;persist()});
@@ -840,12 +832,12 @@ function renderOut(){const e=ST.exp!=null?X[ST.exp].name:'not chosen yet';const 
 $('#outnext').addEventListener('click',e=>{const b=e.currentTarget;if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Tap again to open the entry page';return}delete b.dataset.arm;b.textContent='Start next student';resetExam()});
 function resetExam(){stop();unsubStu?.();unsubStu=null;docExists=false;try{for(let i=0;i<7;i++)localStorage.removeItem('iotexam-bench-'+ST.usn+'-'+i)}catch(e){}
   ST=fresh();stuForm=false;lsSet(SKEY,ST);t0=null;parts=[];wires=[];$('#timer').textContent='00:00';$('#sname').value='';$('#usn').value='';ta.value='';ta.readOnly=false;
-  $('#meter').hidden=true;$('#g3msg').innerHTML='';$('#g3go').hidden=true;$('#g3check').hidden=false;$('#vwarn').hidden=true;$('#cwarn').hidden=true;$('#pwbox').hidden=true;pendWarn=false;show('login');window.scrollTo(0,0)}
+  $('#meter').hidden=true;$('#g3msg').innerHTML='';$('#g3go').hidden=true;$('#g3check').hidden=false;$('#vwarn').hidden=true;$('#cwarn').hidden=true;pendWarn=false;show('login');window.scrollTo(0,0)}
 
 /* ================= FACULTY PANEL ================= */
 let FROWS={},facUnsub=null,facPoll=null,openDet=new Set(),FCANW=null;
 const facOK=()=>!!facPw();
-function setView(v){VIEW=v;$('#vwarn').hidden=true;$('#cwarn').hidden=true;$('#pwbox').hidden=true;
+function setView(v){VIEW=v;$('#vwarn').hidden=true;$('#cwarn').hidden=true;
   if(v==='faculty'){stop();$('#gate').hidden=true;$('#exam').hidden=true;$('#fac').hidden=false;['#who','#whoExpC','#timer','#submit','#viol'].forEach(s=>$(s).hidden=true);
     $('#fback').textContent=ST.usn&&ST.stage!=='login'?`Back to ${ST.name}'s exam`:'Open student view';cfgText();facSub();fmode();window.scrollTo(0,0)}
   else{$('#fac').hidden=true;if(location.hash==='#faculty')try{history.replaceState(null,'',location.pathname+location.search)}catch(e){}facUnsub?.();facUnsub=null;clearInterval(facPoll);show(ST.stage);applyLocal()}}

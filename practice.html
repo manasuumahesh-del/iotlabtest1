@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Practice · IoT Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+/* VOICE: an exam bench: calm, exact, nothing done for the student.
+   IDEA: a green electronics cutting mat with a parts tray beside it, like a real lab table.
+   PICTURE: the bench itself; real-looking parts that the student places and wires, which then light, spin and click.
+   COLOUR and TYPE: Arduino teal header, mat green bench, amber for live signals; IBM Plex Sans + Mono.
+   LAYOUT: test bar, then parts tray | bench | program + serial, then the score sheet. */
+:root{color-scheme:light dark;--bg:light-dark(#f3f6f5,#0d1716);--ink:light-dark(#13211f,#e3ece9);--mute:light-dark(#53625f,#93a6a1);--card:light-dark(#fff,#152321);--line:light-dark(#d4dedb,#28403c);--teal:#00878F;--teal2:light-dark(#006b72,#3cc2c9);--amber:#f5a524;--mat:#1f3d35;--bad:#e5484d}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "IBM Plex Sans",system-ui,sans-serif;overflow-x:clip}
+header{background:var(--teal);color:#fff;padding:14px max(2vw,14px)}
+.hrow{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;max-width:1600px;margin:0 auto}
+h1{font-size:clamp(24px,3vw,32px);line-height:1.05;margin:0;flex:1 1 260px}
+header label{display:grid;font-size:13px;gap:2px;color:#d9f3f4}
+header input,header select{font:16px "IBM Plex Sans",sans-serif;min-height:40px;border-radius:9px;border:0;padding:0 10px;background:#fff;color:#13211f;width:100%}
+#timer{font:600 20px "IBM Plex Mono",monospace;background:#0a6f76;border-radius:9px;padding:6px 12px;white-space:nowrap}
+.btn{font:600 15px "IBM Plex Sans",sans-serif;min-height:44px;padding:0 14px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--ink);cursor:pointer;white-space:nowrap}
+.btn.pri{background:var(--teal);border-color:var(--teal);color:#fff}.btn.acc{background:var(--amber);border-color:var(--amber);color:#1b1300}.btn.red{background:var(--bad);border-color:var(--bad);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+.main{display:grid;grid-template-columns:200px minmax(0,1fr) 360px;gap:14px;padding:14px max(2vw,14px);max-width:1600px;margin:0 auto}
+.tray{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px;align-self:start;max-height:calc(100vh - 40px);overflow:auto;position:sticky;top:10px}
+.tray h2,.side h2{font-size:15px;margin:2px 4px 8px}
+.tray small{display:block;color:var(--mute);margin:0 4px 8px;font-size:13px}
+#parts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.part{display:grid;gap:2px;justify-items:center;border:1px solid var(--line);border-radius:10px;padding:6px 4px;background:#1f3d35;color:#e9f2ef;cursor:pointer;font:600 12px "IBM Plex Sans",sans-serif;text-align:center;min-height:44px}
+.part:hover{border-color:var(--amber)}
+.part svg{width:100%;height:62px}
+.benchwrap{display:grid;gap:10px;align-content:start}
+.bench{background:var(--mat);border-radius:14px;overflow:hidden;position:relative;touch-action:none}
+.bench svg{display:block;width:100%;height:auto;user-select:none}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.sw{width:30px;height:30px;border-radius:50%;border:2px solid #fff6;cursor:pointer;padding:0}
+.sw[aria-pressed=true]{outline:3px solid var(--amber);outline-offset:2px}
+#props{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:44px;font-size:14px}
+#props select{font:16px "IBM Plex Sans",sans-serif;min-height:40px;border-radius:9px;border:1px solid var(--line);background:var(--card);color:var(--ink)}
+.note{font-size:14px;color:var(--mute)}
+.side{display:grid;gap:12px;align-content:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.panel h2{margin:0;padding:9px 12px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.panel h2 span{font-weight:400;color:var(--mute);font-size:13px}
+pre{margin:0;font:12.5px/1.5 "IBM Plex Mono",monospace;overflow:auto}
+#code{max-height:260px;padding:6px 0}
+#code div{white-space:pre;padding-right:10px}#code i{display:inline-block;width:2.8em;text-align:right;padding-right:.9em;color:var(--mute);font-style:normal}
+#code div.cur{background:color-mix(in srgb,var(--amber) 30%,transparent)}
+#serial{height:150px;padding:8px 10px;background:#0b1211;color:#9ff0c4;white-space:pre-wrap}
+.runrow{display:flex;gap:8px;padding:10px 12px;flex-wrap:wrap;align-items:center}
+#sensors{padding:4px 12px 12px;display:grid;gap:10px}
+#sensors label{display:flex;justify-content:space-between;font-weight:600;font-size:14px;gap:8px}
+#sensors output{font:600 14px "IBM Plex Mono",monospace;color:var(--teal2);white-space:nowrap}
+input[type=range]{width:100%;height:36px;accent-color:var(--teal)}
+#warns{padding:8px 12px 12px;font-size:14px;display:grid;gap:6px}
+.w-err{color:var(--bad);font-weight:600}.w-cau{color:light-dark(#9a5b00,#f5b544)}
+.empty{color:var(--mute);font-size:14px}
+.sheet{max-width:1600px;margin:0 auto;padding:0 max(2vw,14px) 30px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.score{display:flex;flex-wrap:wrap;gap:16px;align-items:baseline}
+.score b{font:700 clamp(36px,5vw,52px) "IBM Plex Mono",monospace;color:var(--teal2);line-height:1}
+table{border-collapse:collapse;width:100%;font-size:14px}th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}th{color:var(--mute);font-size:13px}
+td.n{text-align:right;font-family:"IBM Plex Mono",monospace;white-space:nowrap}
+.ok{color:#2fb35a;font-weight:700}.no{color:var(--bad);font-weight:700}
+.scroll{overflow-x:auto}
+/* svg */
+.term{cursor:crosshair}.term .hit{fill:transparent}
+.pad{fill:#0b1a16;stroke:#ffd36b;stroke-width:1.8}
+.term.u .pad{stroke:#fff;stroke-width:1.6}
+.term:hover .pad,.term.pend .pad{fill:#ffd36b;stroke:#fff;stroke-width:2.5;r:8}
+.kitnav{display:flex;gap:6px;flex-wrap:wrap;max-width:1600px;margin:0 auto 10px}.kitnav a{color:#fff;text-decoration:none;font-weight:600;padding:8px 12px;border-radius:9px;background:#0a6f76;min-height:40px;display:inline-flex;align-items:center}.kitnav a[aria-current]{background:#fff;color:#00666c}.kitnav a:first-child{background:transparent;padding-left:0}
+.tag{font:600 12px "IBM Plex Sans",sans-serif;fill:#e9f2ef;paint-order:stroke;stroke:#0c1f1a;stroke-width:3px}
+.silk{font:600 7px "IBM Plex Mono",monospace;fill:#eaf8f9}
+.pinl{font:700 10.5px "IBM Plex Mono",monospace;fill:#fff;paint-order:stroke;stroke:#03363b;stroke-width:3px}
+.pl{font:700 12px "IBM Plex Mono",monospace;fill:#ffe9a8;paint-order:stroke;stroke:#08130f;stroke-width:4px;pointer-events:none}
+.wire{fill:none;stroke-linecap:round;cursor:pointer}
+.wsel{stroke-dasharray:6 5}
+.prt{cursor:grab}
+.snd{fill:none;stroke:#ffd36b;stroke-width:3;opacity:0}.snd.on{animation:ring .5s linear infinite}
+@keyframes ring{0%{opacity:.9}100%{opacity:0;transform:scale(1.3)}}
+@media(prefers-reduced-motion:reduce){.snd.on{animation:none;opacity:.8}}
+.modal{position:fixed;inset:0;background:#000b;display:grid;place-items:center;z-index:50;padding:16px}.modal[hidden]{display:none}
+.mbox{background:var(--card);color:var(--ink);border-radius:16px;padding:22px 24px;max-width:460px;border:3px solid var(--bad);box-shadow:0 20px 60px #0008}.mbox h2{margin:0 0 8px;font-size:24px;color:var(--bad)}.mbox p{margin:0 0 16px}
+.vbadge{background:var(--bad);color:#fff;font:600 15px "IBM Plex Mono",monospace;padding:8px 12px;border-radius:9px;white-space:nowrap}
+@media(max-width:1200px){.main{grid-template-columns:170px minmax(0,1fr)}.side{grid-column:1/-1;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}}
+@media(max-width:700px){.main{grid-template-columns:minmax(0,1fr)}.tray{position:static;max-height:none}#parts{grid-template-columns:repeat(auto-fill,minmax(90px,1fr))}}
+@media(max-width:600px){table{font-size:13px}}
+</style>
+</head>
+<body>
+<header>
+  <nav class="kitnav" aria-label="Student kit"><a href="index.html">IoT Lab Student Kit</a><a href="learn.html">Learn</a><a href="practice.html" aria-current="page">Practice</a></nav>
+  <div class="hrow">
+    <h1>Practice bench</h1>
+    <label>Experiment<select id="exp"></select></label>
+    <label>Your name (optional)<input id="sname" autocomplete="off"></label>
+    <label>USN (optional)<input id="usn" autocomplete="off" style="max-width:150px"></label>
+    <span id="timer">00:00</span>
+    <span id="viol" class="vbadge" hidden></span>
+    <button class="btn acc" id="submit">Check my circuit</button>
+  </div>
+</header>
+
+<div class="main">
+  <aside class="tray">
+    <h2>Parts tray</h2>
+    <small>Tap a part to put it on the bench, then drag it into place.</small>
+    <div id="parts"></div>
+  </aside>
+
+  <div class="benchwrap">
+    <div class="bench" id="benchBox"><svg id="svg" viewBox="0 0 960 640" role="application" aria-label="Breadboard bench: place parts and connect wires"></svg></div>
+    <div class="bar">
+      <span class="note">Wire colour</span><span id="swatches" class="bar"></span>
+      <span class="note" style="flex:1 1 220px">To wire: tap a pin, then tap the pin it connects to. Tap a wire or part to select it; Delete removes it.</span>
+      <button class="btn" id="clear">Clear bench</button>
+    </div>
+    <div id="props"></div>
+  </div>
+
+  <div class="side">
+    <div class="panel">
+      <h2>Program <span id="cname"></span></h2>
+      <pre id="code"></pre>
+      <div class="runrow">
+        <button class="btn pri" id="run">Upload &amp; run</button>
+        <button class="btn" id="stop">Stop</button>
+        <label class="note">Speed <select id="speed"><option value="1">1×</option><option value="2">2×</option><option value="4">4×</option></select></label>
+        <label class="note"><input type="checkbox" id="sound"> Sound</label>
+      </div>
+    </div>
+    <div class="panel"><h2>Sensors <span>move to test</span></h2><div id="sensors"></div></div>
+    <div class="panel"><h2>Serial monitor <span>9600 baud</span></h2><pre id="serial"></pre></div>
+    <div class="panel"><h2>Circuit messages</h2><div id="warns"></div></div>
+  </div>
+</div>
+
+<section class="sheet">
+  <div class="card" id="report"><h2 style="margin:0 0 6px;font-size:20px">Score sheet</h2><p class="empty" style="margin:0">Build the circuit for the chosen experiment, upload and run it, then press Check my circuit. The program is tested on your circuit and a score out of 100 appears here, with what to fix. Practise as often as you like.</p></div>
+</section>
+
+<div id="vwarn" class="modal" hidden role="alertdialog" aria-modal="true" aria-labelledby="vt" aria-describedby="vmsg"><div class="mbox"><h2 id="vt">Warning: you left the test</h2><p id="vmsg"></p><button class="btn red" id="vok">Return to the test</button></div></div>
+<script>
+{
+const CODES=["// Experiment 1: Blink 5 LEDs back and forth\nvoid setup()\n{\n  pinMode(2, OUTPUT);\n  pinMode(3, OUTPUT);\n  pinMode(4, OUTPUT);\n  pinMode(5, OUTPUT);\n  pinMode(6, OUTPUT);\n}\n\nvoid loop()\n{\n  // forward\n  for (int p = 2; p <= 6; p++) {\n    digitalWrite(p, HIGH);\n    delay(1000);\n    digitalWrite(p, LOW);\n    delay(100);\n  }\n  // reverse\n  for (int p = 5; p >= 2; p--) {\n    digitalWrite(p, HIGH);\n    delay(1000);\n    digitalWrite(p, LOW);\n    delay(100);\n  }\n}", "// Experiment 2: Interface a relay with Arduino board\n// Relay coil -> D7, COM -> 5V, NO -> Green LED, NC -> Red LED\n\nconst int relayPin = 7;\n\nvoid setup()\n{\n  pinMode(relayPin, OUTPUT);\n  Serial.begin(9600);\n}\n\nvoid loop()\n{\n  digitalWrite(relayPin, HIGH);   // relay ON  -> NO closed -> Green LED ON\n  Serial.println(\"Relay ON : Green LED ON\");\n  delay(2000);\n\n  digitalWrite(relayPin, LOW);    // relay OFF -> NC closed -> Red LED ON\n  Serial.println(\"Relay OFF: Red LED ON\");\n  delay(2000);\n}", "long readUltrasonicCM(int trigPin, int echoPin)\n{\n  pinMode(trigPin, OUTPUT);\n  digitalWrite(trigPin, LOW);\n  delayMicroseconds(2);\n  digitalWrite(trigPin, HIGH);\n  delayMicroseconds(10);\n  digitalWrite(trigPin, LOW);\n  pinMode(echoPin, INPUT);\n  return 0.01723 * pulseIn(echoPin, HIGH);\n}\nvoid setup()\n{\n  Serial.begin(9600);\n  pinMode(8, OUTPUT); pinMode(9, OUTPUT); pinMode(10, OUTPUT);\n}\nvoid loop()\n{\n  long input = readUltrasonicCM(6, 5);\n  Serial.println(input);\n  if (input <= 100) {\n    digitalWrite(8, HIGH); digitalWrite(9, HIGH); digitalWrite(10, LOW);\n  } else {\n    digitalWrite(8, LOW); digitalWrite(9, LOW); digitalWrite(10, HIGH);\n  }\n  delay(100);\n}", "const int poten = A3;\nint var;\n\nvoid setup()\n{\n  pinMode(6, OUTPUT);\n}\n\nvoid loop()\n{\n  var = analogRead(poten);\n  int pwmValue = map(var, 0, 1023, 0, 255);\n  analogWrite(6, pwmValue);\n}", "int sensorPin = A0;\nint sensorValue = 0;\nint led = 9;\n\nvoid setup() {\n  pinMode(led, OUTPUT);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  sensorValue = analogRead(sensorPin);\n  Serial.println(sensorValue);\n  if (sensorValue < 100) {\n    Serial.println(\"LED light on\");\n    digitalWrite(led, HIGH);\n    delay(1000);\n    digitalWrite(led, LOW);\n  } else {\n    digitalWrite(led, LOW);\n  }\n  delay(200);\n}", "int moistureValue;\nfloat moisture_percentage;\n\nvoid setup() {\n  pinMode(7, OUTPUT);\n  pinMode(6, OUTPUT);\n  pinMode(5, OUTPUT);\n  Serial.begin(9600);\n}\n\nvoid loop() {\n  moistureValue = analogRead(A0);\n  moisture_percentage = ((moistureValue / 539.00) * 100);\n  if (moisture_percentage > 0 && moisture_percentage < 25) {\n    digitalWrite(7, HIGH); digitalWrite(6, LOW); digitalWrite(5, LOW);\n  }\n  if (moisture_percentage > 25 && moisture_percentage < 80) {\n    digitalWrite(7, LOW); digitalWrite(6, HIGH); digitalWrite(5, LOW);\n  }\n  if (moisture_percentage > 80 && moisture_percentage < 100) {\n    digitalWrite(7, LOW); digitalWrite(6, LOW); digitalWrite(5, HIGH);\n  }\n  Serial.print(\"\\nMoisture Value : \");\n  Serial.print(moisture_percentage);\n  Serial.print(\"%\");\n  delay(1000);\n}", "int potPin = A0;\nfloat pH_value;\n\nvoid setup()\n{\n  Serial.begin(9600);\n  Serial.println(\"Turn potentiometer to simulate pH of milk, lime, or water.\");\n}\n\nvoid loop()\n{\n  int analogValue = analogRead(potPin); // 0-1023\n  pH_value = map(analogValue, 0, 1023, 0, 140) / 10.0; // Map to 0-14\n  Serial.print(\"Simulated pH value: \");\n  Serial.println(pH_value, 1); // 1 decimal place\n  delay(1000);\n}"];
+const $=s=>document.querySelector(s);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const WC=['#e5484d','#2b2b2b','#f5c518','#2fb35a','#3b82f6','#f08a24','#e8e8e8'];
+const BANDC=['#111','#7a4a1c','#d12b1f','#f07c00','#f2d200','#2a9d3a','#2453c9','#7d3cc4','#8a8a8a','#f4f4f4'];
+const LEDC={red:'#ff2d2d',green:'#22d45a',yellow:'#ffd21f',blue:'#3a7bff'};
+const LEDP={red:['#5e0808','#d41616','#ff6b6b','#ffe0e0'],green:['#06461b','#15a844','#74f29d','#e0ffea'],yellow:['#6e5200','#e3ad06','#ffe870','#fffbe6'],blue:['#081f63','#2160e8','#8fb2ff','#e6eeff']};
+const LEDDEFS=Object.entries(LEDP).map(([k,[d,m,l,w]])=>`<linearGradient id="lb-${k}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="${d}" stop-opacity=".95"/><stop offset=".2" stop-color="${m}" stop-opacity=".78"/><stop offset=".42" stop-color="${l}" stop-opacity=".7"/><stop offset=".66" stop-color="${m}" stop-opacity=".78"/><stop offset="1" stop-color="${d}" stop-opacity=".95"/></linearGradient><radialGradient id="lg-${k}"><stop offset="0" stop-color="#fff"/><stop offset=".25" stop-color="${w}"/><stop offset=".6" stop-color="${l}" stop-opacity=".75"/><stop offset="1" stop-color="${m}" stop-opacity="0"/></radialGradient>`).join('')+`<linearGradient id="lleg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#eef0f2"/><stop offset=".5" stop-color="#b4b9bf"/><stop offset="1" stop-color="#83888e"/></linearGradient>`;
+function ledBody(id,c,cx,ty){const [d,m,l]=LEDP[c];const X=v=>cx+v,Y=v=>ty+v;
+ return `<g class="lframe"><path d="M${X(-8)} ${Y(40)}V${Y(17)}h4v4h-1.6V${Y(40)}Z" fill="#9aa0a6" opacity=".85"/><path d="M${X(2)} ${Y(40)}V${Y(20)}h-3l-1-4h12l-1 4h-3V${Y(40)}Z" fill="#9aa0a6" opacity=".85"/><rect class="die" id="${id}-die" x="${X(3)}" y="${Y(13.6)}" width="4" height="2.4" fill="#3a3a3a"/><path d="M${X(-6)} ${Y(17)}Q${X(-3)} ${Y(6)} ${X(4)} ${Y(14)}" stroke="#d7dade" stroke-width=".7" fill="none"/></g>
+ <path d="M${X(-13)} ${Y(37)}V${Y(13)}a13 13 0 0 1 26 0V${Y(37)}Z" fill="url(#lb-${c})" stroke="${d}" stroke-opacity=".6" stroke-width=".8"/>
+ <ellipse class="core" id="${id}-core" cx="${X(2)}" cy="${Y(15)}" rx="13" ry="16" fill="url(#lg-${c})" opacity="0"/>
+ <path d="M${X(-15)} ${Y(35)}H${X(13)}V${Y(40.5)}H${X(-12)}Q${X(-15)} ${Y(40.5)} ${X(-15)} ${Y(38)}Z" fill="url(#lb-${c})" stroke="${d}" stroke-opacity=".6" stroke-width=".8"/>
+ <path d="M${X(-8.5)} ${Y(5)}Q${X(-10)} ${Y(20)} ${X(-9)} ${Y(33)}" stroke="#fff" stroke-opacity=".55" stroke-width="2.2" fill="none" stroke-linecap="round"/><ellipse cx="${X(-5)}" cy="${Y(3)}" rx="3.2" ry="2" fill="#fff" opacity=".7"/><ellipse cx="${X(0)}" cy="${Y(1.5)}" rx="7" ry="2.2" fill="#fff" opacity=".14"/>
+ <path class="dim" id="${id}-dim" d="M${X(-15)} ${Y(40.5)}V${Y(13)}a15 15 0 0 1 30 0V${Y(40.5)}Z" fill="#000" opacity=".3"/>`}
+
+
+/* ================= PARTS (realistic SVG) ================= */
+const leg=(d,c='url(#gLeg)',w=2.4)=>`<path d="${d}" stroke="${c}" stroke-width="${w}" fill="none" stroke-linecap="round"/>`;
+const ohmTxt=r=>r>=1000?(r/1000)+' kΩ':r+' Ω';
+function bands(r){let e=0,v=r;while(v>=100){v/=10;e++}v=Math.round(v);return [Math.floor(v/10),v%10,e]}
+const unoPins=(()=>{const p=[];
+  [['AREF','AREF'],['GNDt','GND'],['D13','13'],['D12','12'],['D11','~11'],['D10','~10'],['D9','~9'],['D8','8']].forEach(([k,l],i)=>p.push([k,97+i*13,12,l]));
+  [['D7','7'],['D6','~6'],['D5','~5'],['D4','4'],['D3','~3'],['D2','2'],['D1','TX 1'],['D0','RX 0']].forEach(([k,l],i)=>p.push([k,206+i*13,12,l]));
+  [['IOREF','IOREF'],['RST','RESET'],['3V3','3.3V'],['5V','5V'],['GND1','GND'],['GND2','GND'],['VIN','VIN']].forEach(([k,l],i)=>p.push([k,123+i*13,214,l]));
+  ['A0','A1','A2','A3','A4','A5'].forEach((k,i)=>p.push([k,218+i*13,214,k]));return p})();
+const P={
+ uno:{name:'Arduino UNO R3',pre:'U',w:310,h:226,pins:unoPins,
+  draw:(o)=>{let s=`<rect x="-22" y="30" width="60" height="48" rx="3" fill="url(#gMetal)" stroke="#7d8288"/><rect x="-18" y="38" width="20" height="32" fill="#cfd2d6" stroke="#9aa0a6"/>
+  <rect x="-14" y="150" width="54" height="42" rx="4" fill="#1b1b1b"/><circle cx="4" cy="171" r="9" fill="#333" stroke="#555"/>
+  <rect x="0" y="0" width="310" height="226" rx="9" fill="url(#gUno)" stroke="#065a62" stroke-width="2"/>
+  <path d="M60 60 C120 70 140 110 200 112 M50 190 C120 170 160 140 250 130 M100 30 V100 M260 30 C250 60 230 70 210 100" stroke="#ffffff14" stroke-width="2" fill="none"/>
+  ${[[16,16],[16,210],[292,52],[292,192]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="7" fill="#e9eef0" stroke="#cdbf8a" stroke-width="2"/><circle cx="${x}" cy="${y}" r="3.5" fill="#0b2b2e"/>`).join('')}
+  <rect x="30" y="8" width="20" height="20" rx="2" fill="url(#gMetal)"/><circle cx="40" cy="18" r="6" fill="#c9302c"/>
+  <rect x="60" y="34" width="24" height="24" fill="#1c1c1c"/><text x="72" y="49" text-anchor="middle" class="silk" style="font-size:5px">16U2</text>
+  <ellipse cx="128" cy="120" rx="13" ry="5" fill="url(#gMetal)" stroke="#888"/>
+  <circle cx="44" cy="110" r="9" fill="#2a2a2a" stroke="#888"/><path d="M38 110h12M44 104v12" stroke="#666"/><circle cx="66" cy="110" r="9" fill="#2a2a2a" stroke="#888"/><path d="M60 110h12M66 104v12" stroke="#666"/>
+  <rect x="146" y="150" width="148" height="36" rx="2" fill="#1b1b1b"/>${Array.from({length:14},(_,i)=>`<rect x="${152+i*10}" y="145" width="4" height="5" fill="#b9bec4"/><rect x="${152+i*10}" y="186" width="4" height="5" fill="#b9bec4"/>`).join('')}
+  <path d="M146 162 a6 6 0 0 1 0 12" fill="#333"/><text x="222" y="171" text-anchor="middle" class="silk" style="font-size:8px;fill:#bbb">ATMEGA328P-PU</text>
+  <text x="200" y="104" style="font:700 34px 'IBM Plex Sans';fill:#fff">UNO</text><text x="276" y="104" style="font:700 11px 'IBM Plex Sans';fill:#fff">R3</text>
+  <rect id="${o.id}-L" x="176" y="38" width="9" height="5" rx="1" fill="#6b5a2a"/><text x="189" y="43" class="silk">L</text>
+  <rect id="${o.id}-TX" x="176" y="48" width="9" height="5" rx="1" fill="#6b5a2a"/><text x="189" y="53" class="silk">TX</text>
+  <rect id="${o.id}-ON" x="262" y="122" width="9" height="5" rx="1" fill="#2a4a2a"/><text x="275" y="127" class="silk">ON</text>
+  <rect x="90" y="4" width="104" height="16" rx="2" fill="#141414"/><rect x="199" y="4" width="105" height="16" rx="2" fill="#141414"/>
+  <rect x="116" y="206" width="92" height="16" rx="2" fill="#141414"/><rect x="211" y="206" width="79" height="16" rx="2" fill="#141414"/>
+  <text x="240" y="62" class="silk" style="font-size:7px">DIGITAL (PWM~)</text>`;
+  unoPins.forEach(([k,x,y,l])=>{s+=`<rect x="${x-3}" y="${y-3}" width="6" height="6" fill="#050505" stroke="#555" stroke-width=".6"/>`+(y<100?`<text class="pinl" transform="translate(${x-3.5},${y+9}) rotate(90)">${l}</text>`:`<text class="pinl" transform="translate(${x+3.5},${y-9}) rotate(-90)">${l}</text>`)});
+  return s}},
+ led:{name:'LED',pre:'LED',w:32,h:84,props:{color:'red'},pins:[['A',8,84,'Anode (+, long leg)'],['K',24,76,'Cathode (−, flat side)']],
+  draw:(o)=>{const c=o.props.color;return `<ellipse id="${o.id}-cast" cx="16" cy="90" rx="26" ry="7" fill="${LEDC[c]}" opacity="0" style="filter:blur(5px)"/><circle id="${o.id}-glow" cx="16" cy="22" r="30" fill="${LEDC[c]}" opacity="0" style="filter:blur(9px)"/>
+  <path d="M8 48 V57 Q8 60 5.5 62 L5 64 V84" stroke="#c3c7cc" stroke-width="2.4" fill="none" stroke-linecap="round"/><path d="M24 48 V76" stroke="#b9bec4" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+  ${ledBody(o.id,c,16,9)}`}},
+ res:{name:'Resistor',pre:'R',w:84,h:20,props:{ohm:220},pins:[['1',0,10,'Terminal 1'],['2',84,10,'Terminal 2']],
+  draw:(o)=>{const [a,b,e]=bands(o.props.ohm);return `${leg('M0 10 H84')}<path d="M22 3 h40 a8 8 0 0 1 0 14 h-40 a8 8 0 0 1 0 -14z" fill="url(#gBeige)" stroke="#a8874c"/>
+  ${[[27,a],[35,b],[43,e]].map(([x,v])=>`<rect x="${x}" y="3" width="4.5" height="14" fill="${BANDC[v]}"/>`).join('')}<rect x="55" y="3" width="4.5" height="14" fill="#c9a43a"/><rect x="20" y="5" width="44" height="3" rx="1.5" fill="#fff" opacity=".25"/>`}},
+ relay:{name:'Relay SPDT 5 V',pre:'K',w:100,h:104,pins:[['C1',12,104,'Coil 1'],['C2',30,104,'Coil 2'],['COM',50,104,'COM (common)'],['NO',70,104,'NO (normally open)'],['NC',88,104,'NC (normally closed)']],
+  draw:(o)=>`${[12,30,50,70,88].map(x=>leg(`M${x} 84 V104`)).join('')}<rect x="0" y="0" width="100" height="86" rx="6" fill="url(#gRelay)" stroke="#123a80"/>
+  <text x="50" y="16" text-anchor="middle" class="silk" style="font-size:8px">SRD-05VDC-SL-C</text><text x="50" y="27" text-anchor="middle" class="silk">10A 250VAC · 5VDC coil</text>
+  <rect x="12" y="34" width="76" height="36" rx="3" fill="#0b1f3f"/><rect id="${o.id}-coil" x="18" y="42" width="16" height="22" rx="2" fill="#b87333"/>
+  <circle cx="62" cy="42" r="3" fill="#ddd"/><circle cx="80" cy="42" r="3" fill="#ddd"/><text x="62" y="39" text-anchor="middle" class="silk" style="font-size:5px">NC</text><text x="80" y="39" text-anchor="middle" class="silk" style="font-size:5px">NO</text>
+  <line id="${o.id}-arm" x1="70" y1="64" x2="62" y2="44" stroke="#eee" stroke-width="3" stroke-linecap="round"/><circle cx="70" cy="64" r="3" fill="#ddd"/>
+  ${[['C1',12],['C2',30],['COM',50],['NO',70],['NC',88]].map(([t,x])=>`<text x="${x}" y="81" text-anchor="middle" class="silk" style="font-size:6.5px">${t}</text>`).join('')}`},
+ hc:{name:'Ultrasonic HC-SR04',pre:'US',w:150,h:96,props:{val:50},pins:[['VCC',54,96,'VCC (+5 V)'],['TRIG',67,96,'Trig'],['ECHO',80,96,'Echo'],['GND',93,96,'GND']],
+  draw:(o)=>`${[54,67,80,93].map(x=>leg(`M${x} 80 V96`)).join('')}<rect x="0" y="0" width="150" height="82" rx="4" fill="url(#gHC)" stroke="#123c7a"/>
+  ${[36,114].map(x=>`<circle cx="${x}" cy="38" r="31" fill="url(#gMetal)" stroke="#777"/><circle cx="${x}" cy="38" r="23" fill="url(#mesh)"/><circle cx="${x}" cy="38" r="23" fill="none" stroke="#555" stroke-width="2"/>`).join('')}
+  <text x="36" y="78" text-anchor="middle" class="silk">T</text><text x="114" y="78" text-anchor="middle" class="silk">R</text>
+  <ellipse cx="75" cy="12" rx="10" ry="5" fill="url(#gMetal)" stroke="#888"/><text x="75" y="34" text-anchor="middle" class="silk" style="font-size:8px">HC-SR04</text>
+  <text x="75" y="64" text-anchor="middle" class="silk" style="font-size:6px">Vcc Trig Echo Gnd</text><rect x="47" y="74" width="54" height="8" fill="#141414"/>
+  <g id="${o.id}-wave" opacity="0"><path d="M150 26 q14 12 0 24 M162 18 q22 20 0 40 M174 10 q30 28 0 56" stroke="#9ff0c4" stroke-width="2.5" fill="none"/></g>
+  <text id="${o.id}-d" x="152" y="96" class="tag">object ${o.props.val} cm</text>`},
+ piezo:{name:'Piezo buzzer',pre:'BZ',w:56,h:80,pins:[['P',18,80,'Positive (+)'],['N',38,80,'Negative (−)']],
+  draw:(o)=>`${leg('M18 50 V80','#d42a2a',2.6)}${leg('M38 50 V80','#555',2.6)}<circle cx="28" cy="28" r="27" fill="url(#gBlack)" stroke="#000"/><circle cx="28" cy="28" r="20" fill="none" stroke="#3a3a3a" stroke-width="2"/><circle cx="28" cy="28" r="4" fill="#050505"/><text x="12" y="18" class="silk" style="font-size:10px">+</text>
+  <circle class="snd" id="${o.id}-s1" cx="28" cy="28" r="34" style="transform-origin:28px 28px"/><circle class="snd" id="${o.id}-s2" cx="28" cy="28" r="44" style="transform-origin:28px 28px;animation-delay:.25s"/>`},
+ motor:{name:'DC motor',pre:'M',w:150,h:70,pins:[['T1',0,22,'Terminal 1'],['T2',0,48,'Terminal 2']],
+  draw:(o)=>`<rect x="0" y="18" width="10" height="8" fill="url(#gCopper)"/><rect x="0" y="44" width="10" height="8" fill="url(#gCopper)"/>
+  <rect x="6" y="6" width="22" height="58" rx="6" fill="#e9e2d0" stroke="#b9b29f"/><rect x="24" y="2" width="88" height="66" rx="12" fill="url(#gMetalV)" stroke="#8d9299"/>
+  <path d="M40 4 V66 M96 4 V66" stroke="#0002"/><rect x="110" y="26" width="10" height="18" fill="url(#gMetal)"/><rect x="118" y="32" width="12" height="6" fill="#bbb"/>
+  <g id="${o.id}-rot" transform="rotate(0 136 35)"><circle cx="136" cy="35" r="17" fill="#f5a524" stroke="#8a5a00" stroke-width="2"/><path d="M136 18 v34 M119 35 h34" stroke="#8a5a00" stroke-width="4"/><circle cx="136" cy="35" r="4" fill="#5a3a00"/></g>
+  <text id="${o.id}-rpm" x="68" y="-8" text-anchor="middle" class="tag">0 rpm</text>`},
+ npn:{name:'NPN transistor',pre:'Q',w:34,h:76,pins:[['E',7,76,'Emitter'],['B',17,76,'Base'],['C',27,76,'Collector']],
+  draw:(o)=>`${[7,17,27].map(x=>leg(`M${x} 44 V76`)).join('')}<path d="M3 46 V16 a14 14 0 0 1 28 0 V46 Z" fill="url(#gBlack)" stroke="#000"/><text x="17" y="30" text-anchor="middle" class="silk" style="font-size:7px">NPN</text><text x="17" y="40" text-anchor="middle" class="silk" style="font-size:5px">E B C</text>`},
+ bat:{name:'9 V battery',pre:'BAT',w:76,h:120,pins:[['P',22,0,'+ terminal (9 V)'],['N',54,0,'− terminal']],
+  draw:(o)=>`<rect x="18" y="0" width="8" height="10" fill="#bbb"/><rect x="50" y="0" width="8" height="10" fill="#bbb"/><rect x="0" y="10" width="76" height="110" rx="6" fill="url(#gBlack)" stroke="#000"/><rect x="0" y="72" width="76" height="48" rx="6" fill="url(#gCopper)"/><rect x="0" y="72" width="76" height="8" fill="url(#gCopper)"/>
+  <circle cx="22" cy="12" r="8" fill="url(#gMetal)" stroke="#777"/><path d="M47 12 l4 -7 h7 l4 7 l-4 7 h-7z" fill="url(#gMetal)" stroke="#777"/><text x="22" y="32" text-anchor="middle" class="silk" style="font-size:11px">+</text><text x="54" y="32" text-anchor="middle" class="silk" style="font-size:11px">−</text>
+  <text x="38" y="60" text-anchor="middle" style="font:700 22px 'IBM Plex Sans';fill:#fff">9V</text>`},
+ pot:{name:'Potentiometer',pre:'POT',w:64,h:86,props:{val:0.5},pins:[['1',12,86,'Terminal 1'],['W',32,86,'Wiper (middle)'],['2',52,86,'Terminal 2']],
+  draw:(o)=>`${[12,32,52].map(x=>leg(`M${x} 60 V86`)).join('')}<rect x="4" y="16" width="56" height="48" rx="4" fill="#2b5fb8" stroke="#163f86"/><circle cx="32" cy="38" r="24" fill="#1d1d1d"/><circle cx="32" cy="38" r="21" fill="none" stroke="#4a4a4a" stroke-width="3" stroke-dasharray="2 2"/><circle cx="32" cy="38" r="14" fill="#2a2a2a"/>
+  <line id="${o.id}-knob" x1="32" y1="38" x2="32" y2="20" stroke="#fff" stroke-width="3.5" stroke-linecap="round" transform="rotate(${-135+o.props.val*270} 32 38)"/><text x="32" y="12" text-anchor="middle" class="silk" style="font-size:7px">250 kΩ</text>`},
+ ldr:{name:'LDR (photoresistor)',pre:'LDR',w:34,h:76,props:{val:70},pins:[['1',10,76,'Terminal 1'],['2',24,76,'Terminal 2']],
+  draw:(o)=>`${leg('M10 30 V76')}${leg('M24 30 V76')}<circle cx="17" cy="18" r="16" fill="url(#gLDR)" stroke="#fff6" stroke-width="2"/><path d="M7 10 h20 v3 h-20 v3 h20 v3 h-20 v3 h20 v3 h-20" stroke="#7a1f0c" stroke-width="1.6" fill="none"/><ellipse cx="11" cy="10" rx="4" ry="2.5" fill="#fff" opacity=".5"/>`},
+ soil:{name:'Soil moisture sensor',pre:'MS',w:64,h:170,props:{val:167},pins:[['VCC',16,0,'Power (+5 V)'],['SIG',32,0,'Signal (analog out)'],['GND',48,0,'Ground']],
+  draw:(o)=>`${[16,32,48].map(x=>`<rect x="${x-2}" y="0" width="4" height="12" fill="url(#gGold)"/>`).join('')}<rect x="0" y="10" width="64" height="56" rx="5" fill="#1b3e8f" stroke="#0f2a66"/><rect x="8" y="12" width="48" height="8" fill="#141414"/>
+  <text x="32" y="32" text-anchor="middle" class="silk">VCC SIG GND</text><text x="32" y="48" text-anchor="middle" class="silk" style="font-size:6.5px">SOIL MOISTURE</text>
+  <path d="M6 62 h18 v96 a9 9 0 0 1 -18 0z M40 62 h18 v96 a9 9 0 0 1 -18 0z" fill="#1b3e8f" stroke="#0f2a66"/><path d="M10 66 h10 v90 a5 5 0 0 1 -10 0z M44 66 h10 v90 a5 5 0 0 1 -10 0z" fill="url(#gGold)"/>
+  <text id="${o.id}-v" x="70" y="100" class="tag">${(o.props.val/539*100).toFixed(1)} %</text>`}
+};
+const TRAY=[['uno'],['led',{color:'red'},'Red LED'],['led',{color:'green'},'Green LED'],['led',{color:'yellow'},'Yellow LED'],['res',{ohm:220},'Resistor'],['relay'],['hc'],['piezo'],['motor'],['npn'],['bat'],['pot'],['ldr'],['soil']];
+
+/* ================= STATE ================= */
+let parts=[],wires=[],sel=null,pend=null,wcol=0,EXP=null,RUN=null,drag=null,CS=null,t0=null,lastWarn='';
+const B={d:[],mode:[],pwm:[],a:{},t:0,loops:0,line:-1,serial:'',tx:0};
+const STOP={};
+const uno=()=>parts.find(p=>p.type==='uno');
+const pinDef=(p,k)=>P[p.type].pins.find(q=>q[0]===k);
+const tpos=key=>{const [id,k]=key.split('.');const p=parts.find(q=>q.id===id);if(!p)return null;const d=pinDef(p,k);return [p.x+d[1],p.y+d[2]]};
+const pname=p=>p.name+(p.type==='res'?' '+ohmTxt(p.props.ohm):p.type==='led'?` (${p.props.color})`:'');
+
+/* ================= CIRCUIT SOLVER ================= */
+const ldrOhm=L=>Math.pow(10,Math.log10(181000)-L/100*(Math.log10(181000)-Math.log10(506)));
+function circuit(){
+  const R={on:!!RUN,warn:[],led:{},motor:{},piezo:{},relay:{},hc:{},V:{},net:{}};
+  const u=uno();if(!RUN||!u)return R;
+  const par={};const find=k=>{let r=k;while(par[r]!==r)r=par[r];while(par[k]!==r){const n=par[k];par[k]=r;k=n}return r};const join=(a,b)=>{a=find(a);b=find(b);if(a!==b)par[a]=b};
+  for(const p of parts)for(const d of P[p.type].pins)par[p.id+'.'+d[0]]=p.id+'.'+d[0];
+  for(const w of wires)if(par[w.a]&&par[w.b])join(w.a,w.b);
+  join(u.id+'.GNDt',u.id+'.GND1');join(u.id+'.GND1',u.id+'.GND2');
+  const roots=[...new Set(Object.keys(par).map(find))];const idx={};roots.forEach((r,i)=>idx[r]=i);
+  const N=k=>idx[find(k)];R.net=k=>N(k);
+  const fixed=new Map();const warn=(type,text)=>{if(!R.warn.some(w=>w.text===text))R.warn.push({type,text})};
+  const fix=(k,v,src)=>{const n=N(k);const f=fixed.get(n);if(f&&Math.abs(f.v-v)>0.05){warn('short',`Short circuit: ${src} is wired to ${f.src}.`);return}if(!f)fixed.set(n,{v,src})};
+  const U=u.id+'.';fix(U+'GNDt',0,'GND');fix(U+'5V',5,'5V');fix(U+'3V3',3.3,'3.3V');
+  for(let p=0;p<14;p++)if(B.mode[p]==='OUT'){const hi=B.pwm[p]!=null?B.pwm[p]>0:!!B.d[p];fix(U+'D'+p,hi?5:0,`pin D${p} (${hi?'HIGH':'LOW'})`)}
+  for(const p of parts){const K=p.id+'.';
+    if(p.type==='bat'){const fn=fixed.get(N(K+'N')),fp=fixed.get(N(K+'P'));if(fn)fix(K+'P',fn.v+9,'9 V battery (+)');else if(fp)fix(K+'N',fp.v-9,'9 V battery (−)')}}
+  for(const p of parts){const K=p.id+'.';if(p.type==='soil'){const a=fixed.get(N(K+'VCC')),g=fixed.get(N(K+'GND'));if(a&&g&&a.v-g.v>4.5)fix(K+'SIG',g.v+p.props.val/1023*5,'moisture sensor SIG')}}
+  // elements
+  const st=R._st||{};const E=[];
+  const g2=(a,b,g,tag)=>E.push({a:N(a),b:N(b),g,tag});
+  for(const p of parts){const K=p.id+'.',pr=p.props||{};
+    if(p.type==='res')g2(K+'1',K+'2',1/pr.ohm,p);
+    if(p.type==='ldr')g2(K+'1',K+'2',1/ldrOhm(pr.val),p);
+    if(p.type==='pot'){const v=Math.min(.999,Math.max(.001,pr.val));g2(K+'1',K+'W',1/(250000*(1-v)),p);g2(K+'W',K+'2',1/(250000*v),p)}
+    if(p.type==='motor')g2(K+'T1',K+'T2',1/10,{motor:p});
+    if(p.type==='piezo')g2(K+'P',K+'N',1/2000,p);
+    if(p.type==='hc')g2(K+'VCC',K+'GND',1/333,p);
+    if(p.type==='soil')g2(K+'VCC',K+'GND',1/1000,p);
+    if(p.type==='relay'){g2(K+'C1',K+'C2',1/70,{coil:p});E.push({a:N(K+'COM'),b:N(K+'NO'),sw:()=>R.relay[p.id]?1e3:1e-9});E.push({a:N(K+'COM'),b:N(K+'NC'),sw:()=>R.relay[p.id]?1e-9:1e3})}
+    if(p.type==='led')E.push({a:N(K+'A'),b:N(K+'K'),dio:p,vf:1.8,r:20});
+    if(p.type==='npn'){E.push({a:N(K+'B'),b:N(K+'E'),dio:{id:p.id+'be'},vf:.7,r:10,be:p});E.push({a:N(K+'C'),b:N(K+'E'),sw:()=>R.npnOn?.[p.id]?10:1e-9,ce:p})}}
+  const n=roots.length;const uk=[];const map=new Array(n).fill(-1);for(let i=0;i<n;i++)if(!fixed.has(i)){map[i]=uk.length;uk.push(i)}
+  const on={};R.npnOn={};let V=new Array(n).fill(0);
+  for(let it=0;it<14;it++){
+    const m=uk.length;const A=Array.from({length:m},()=>new Float64Array(m));const b=new Float64Array(m);
+    const vf=i=>fixed.get(i).v;
+    const stamp=(a,c,g,I0=0)=>{const ia=map[a],ic=map[c];
+      if(ia>=0){A[ia][ia]+=g;if(ic>=0)A[ia][ic]-=g;else b[ia]+=g*vf(c);b[ia]+=I0}
+      if(ic>=0){A[ic][ic]+=g;if(ia>=0)A[ic][ia]-=g;else b[ic]+=g*vf(a);b[ic]-=I0}};
+    for(const e of E){if(e.a===e.b)continue;if(e.dio){const k=e.dio.id;if(on[k])stamp(e.a,e.b,1/e.r,e.vf/e.r);else stamp(e.a,e.b,1e-9)}else if(e.sw)stamp(e.a,e.b,e.sw());else stamp(e.a,e.b,e.g)}
+    for(let i=0;i<m;i++)A[i][i]+=1e-9;
+    const x=gauss(A,b);V=new Array(n);for(let i=0;i<n;i++)V[i]=fixed.has(i)?fixed.get(i).v:x[map[i]];
+    let ch=false;
+    for(const e of E){if(e.dio){const k=e.dio.id;const d=V[e.a]-V[e.b];const nv=on[k]?d>e.vf-0.02:d>e.vf+0.02;if(nv!==!!on[k]){on[k]=nv;ch=true}}}
+    for(const p of parts){if(p.type==='relay'){const v=Math.abs(V[N(p.id+'.C1')]-V[N(p.id+'.C2')])>3.5;if(v!==!!R.relay[p.id]){R.relay[p.id]=v;ch=true}}
+      if(p.type==='npn'){const ib=on[p.id+'be']?(V[N(p.id+'.B')]-V[N(p.id+'.E')]-.7)/10:0;const v=ib>5e-5;if(v!==!!R.npnOn[p.id]){R.npnOn[p.id]=v;ch=true}}}
+    if(!ch)break}
+  R.V=V;
+  const cur=e=>{if(e.dio)return on[e.dio.id]?(V[e.a]-V[e.b]-e.vf)/e.r:0;const g=e.sw?e.sw():e.g;return (V[e.a]-V[e.b])*g};
+  const Iout=new Array(n).fill(0);for(const e of E){if(e.a===e.b)continue;const i=cur(e);Iout[e.a]+=i;Iout[e.b]-=i}
+  for(let p=0;p<14;p++)if(B.mode[p]==='OUT'){const i=Math.abs(Iout[N(U+'D'+p)]);if(i>0.041)warn('pin',`Pin D${p} is supplying ${Math.round(i*1000)} mA; an Arduino pin is rated for 40 mA. On real hardware use a driver (transistor or relay module).`)}
+  // npn drive duty
+  const duty={};
+  for(const p of parts)if(p.type==='npn'&&R.npnOn[p.id]){const bn=N(p.id+'.B');const cand=new Set([bn]);for(const e of E)if(e.tag?.type==='res'){if(e.a===bn)cand.add(e.b);if(e.b===bn)cand.add(e.a)}
+    let d=0;for(let q=0;q<14;q++)if(B.mode[q]==='OUT'&&cand.has(N(U+'D'+q)))d=Math.max(d,B.pwm[q]!=null?B.pwm[q]/255:B.d[q]);duty[p.id]=d||1;
+    const ib=(V[bn]-V[N(p.id+'.E')]-.7)/10;if(ib>0.02)warn('base',`${p.name}: base current ${Math.round(ib*1000)} mA. Put a resistor in series with the base.`)}
+  for(const e of E){if(e.dio&&e.dio.type==='led'){const i=cur(e);R.led[e.dio.id]={I:i,b:Math.max(0,Math.min(1,i/0.012))};if(i>0.03)warn('burn',`${e.dio.name}: ${Math.round(i*1000)} mA through the LED. It would burn out; add a series resistor.`)}
+    if(e.tag?.motor){const p=e.tag.motor;const vm=Math.abs(V[e.a]-V[e.b]);let dd=1;for(const q in duty){const cn=N(q+'.C');if(cn===e.a||cn===e.b)dd=duty[q]}R.motor[p.id]=Math.min(22000,vm/9*20000*dd)}}
+  for(const p of parts){const K=p.id+'.';if(p.type==='piezo')R.piezo[p.id]=V[N(K+'P')]-V[N(K+'N')]>2.5;if(p.type==='hc')R.hc[p.id]=V[N(K+'VCC')]-V[N(K+'GND')]>=4.5}
+  R.analog=ch=>{const v=V[N(U+'A'+ch)];return Math.max(0,Math.min(1023,Math.round(v/5*1023)))};
+  R.pulse=(tp,ep)=>{for(const p of parts)if(p.type==='hc'&&R.hc[p.id]&&N(p.id+'.TRIG')===N(U+'D'+tp)&&N(p.id+'.ECHO')===N(U+'D'+ep))return Math.round(p.props.val/0.01723);return 0};
+  if(parts.filter(p=>p.type==='uno').length>1)warn('info','Only the first Arduino is simulated.');
+  return R}
+function gauss(A,b){const n=b.length;for(let c=0;c<n;c++){let p=c;for(let r=c+1;r<n;r++)if(Math.abs(A[r][c])>Math.abs(A[p][c]))p=r;[A[c],A[p]]=[A[p],A[c]];[b[c],b[p]]=[b[p],b[c]];const d=A[c][c]||1e-18;for(let r=c+1;r<n;r++){const f=A[r][c]/d;if(!f)continue;for(let k=c;k<n;k++)A[r][k]-=f*A[c][k];b[r]-=f*b[c]}}
+  const x=new Float64Array(n);for(let r=n-1;r>=0;r--){let s=b[r];for(let k=r+1;k<n;k++)s-=A[r][k]*x[k];x[r]=s/(A[r][r]||1e-18)}return x}
+
+/* ================= EXPERIMENTS ================= */
+const X=[
+{name:'Experiment 1 · Blink 5 LEDs back and forth',req:[['uno',1],['led',5],['res',5]],
+ async setup(a){for(let p=2;p<=6;p++){a.L('pinMode('+p);a.pinMode(p,1)}},
+ async loop(a){for(let p=2;p<=6;p++){a.L('digitalWrite(p, HIGH)',0);a.digitalWrite(p,1);a.L('delay(1000)',0);await a.delay(1000);a.L('digitalWrite(p, LOW)',0);a.digitalWrite(p,0);a.L('delay(100)',0);await a.delay(100)}
+   for(let p=5;p>=2;p--){a.L('digitalWrite(p, HIGH)',1);a.digitalWrite(p,1);a.L('delay(1000)',1);await a.delay(1000);a.L('digitalWrite(p, LOW)',1);a.digitalWrite(p,0);a.L('delay(100)',1);await a.delay(100)}},
+ async grade(c){const ev=await c.record(9,(p,v)=>v===1);const C=[];
+   const f5=ev.slice(0,5);const one=f5.length===5&&f5.every(e=>e.lit.length===1);
+   C.push(['Each pin D2–D6 lights exactly one LED',one,one?'Every forward step lit a single LED.':`Lit LEDs per step: ${f5.map(e=>`D${e.p}→${e.lit.length?e.lit.map(c.nm).join('+'):'none'}`).join(', ')}`]);
+   const ids=f5.map(e=>e.lit[0]).filter(Boolean);const uni=new Set(ids).size===5;
+   C.push(['Five different LEDs are used',uni,uni?'D2…D6 each drive their own LED.':`Only ${new Set(ids).size} distinct LED(s) lit.`]);
+   const rv=ev.length===9&&[5,6,7,8].every((k,i)=>ev[k].lit[0]&&ev[k].lit[0]===f5[3-i]?.lit[0]);
+   C.push(['Reverse sweep lights LED 4 → LED 1',rv,rv?'Back-and-forth pattern confirmed.':'Reverse sweep did not light the expected LEDs.']);
+   const xs=ids.map(id=>c.part(id).x);const mono=uni&&(xs.every((x,i)=>!i||x>xs[i-1])||xs.every((x,i)=>!i||x<xs[i-1]));
+   C.push(['LEDs placed in pin order (a running light)',mono,mono?'LED positions follow D2 → D6.':'LEDs are not laid out in D2 → D6 order, so the light jumps instead of running.']);return C}},
+{name:'Experiment 2 · Relay with Arduino',req:[['uno',1],['relay',1],['led',2,'green'],['res',2]],ledNeed:{green:1,red:1},
+ async setup(a){a.L('pinMode(relayPin');a.pinMode(7,1);a.L('Serial.begin')},
+ async loop(a){a.L('digitalWrite(relayPin, HIGH)');a.digitalWrite(7,1);a.L('"Relay ON');a.Serial.println('Relay ON : Green LED ON');a.L('delay(2000)',0);await a.delay(2000);
+   a.L('digitalWrite(relayPin, LOW)');a.digitalWrite(7,0);a.L('"Relay OFF');a.Serial.println('Relay OFF: Red LED ON');a.L('delay(2000)',1);await a.delay(2000)},
+ async grade(c){const ev=await c.record(4,p=>p===7);const C=[];const hi=ev.filter(e=>e.v===1),lo=ev.filter(e=>e.v===0);
+   const en=hi.length>0&&hi.every(e=>Object.values(e.cs.relay).some(Boolean))&&lo.every(e=>!Object.values(e.cs.relay).some(Boolean));
+   C.push(['D7 energises the relay coil',en,en?'Relay clicks ON with D7 HIGH and OFF with D7 LOW.':'Relay coil is not switched by D7 (check COIL1 → D7, COIL2 → GND).']);
+   const g=hi.length>0&&hi.every(e=>e.lit.length===1&&c.part(e.lit[0]).props.color==='green');
+   C.push(['Relay ON → green LED lit (via NO)',g,g?'Green LED ON, red OFF while energised.':`While energised lit: ${hi.map(e=>e.lit.map(c.nm).join('+')||'none').join(' / ')}`]);
+   const r=lo.length>0&&lo.every(e=>e.lit.length===1&&c.part(e.lit[0]).props.color==='red');
+   C.push(['Relay OFF → red LED lit (via NC)',r,r?'Red LED ON, green OFF while de-energised.':`While de-energised lit: ${lo.map(e=>e.lit.map(c.nm).join('+')||'none').join(' / ')}`]);return C}},
+{name:'Experiment 3 · Intrusion detection (ultrasonic)',req:[['uno',1],['hc',1],['led',2],['res',2],['piezo',1]],
+ async setup(a){a.L('Serial.begin');a.L('pinMode(8, OUTPUT)');a.pinMode(8,1);a.pinMode(9,1);a.pinMode(10,1)},
+ async loop(a){a.L('long input');a.L('pinMode(trigPin');a.pinMode(6,1);a.L('digitalWrite(trigPin, LOW)',0);a.digitalWrite(6,0);a.L('digitalWrite(trigPin, HIGH)');a.digitalWrite(6,1);a.L('digitalWrite(trigPin, LOW)',1);a.digitalWrite(6,0);a.L('pinMode(echoPin');a.pinMode(5,0);
+   a.L('return 0.01723');const input=Math.trunc(0.01723*a.pulseIn(5));B.meas=input;a.L('Serial.println(input)');a.Serial.println(input);
+   if(input<=100){a.L('digitalWrite(8, HIGH)');a.digitalWrite(8,1);a.digitalWrite(9,1);a.digitalWrite(10,0)}else{a.L('digitalWrite(8, LOW)');a.digitalWrite(8,0);a.digitalWrite(9,0);a.digitalWrite(10,1)}a.L('delay(100)');await a.delay(100)},
+ async grade(c){const C=[];c.set('hc',50);c.start();await c.loops(3);let s=c.snap();const m50=B.meas;
+   C.push(['Sensor measures 50 cm correctly',Math.abs(m50-50)<=2,Math.abs(m50-50)<=2?`Read ${m50} cm.`:`Read ${m50} cm. Check HC-SR04 VCC → 5V, GND → GND, Trig → D6, Echo → D5.`]);
+   const a=s.lit.length===2&&!Object.values(s.cs.piezo).some(Boolean);C.push(['Object at 50 cm → both LEDs ON, buzzer OFF',a,a?'2 LEDs lit, buzzer silent.':`${s.lit.length} LED(s) lit, buzzer ${Object.values(s.cs.piezo).some(Boolean)?'ON':'OFF'}.`]);
+   c.set('hc',150);await c.loops(3);s=c.snap();const b=B.meas>100&&s.lit.length===0&&Object.values(s.cs.piezo).some(Boolean);
+   C.push(['Object at 150 cm → LEDs OFF, buzzer ON',b,b?`Read ${B.meas} cm; buzzer sounding.`:`Read ${B.meas} cm, ${s.lit.length} LED(s) lit, buzzer ${Object.values(s.cs.piezo).some(Boolean)?'ON':'OFF'} (piezo + → D10, − → GND).`]);return C}},
+{name:'Experiment 4 · DC motor speed control (PWM)',req:[['uno',1],['npn',1],['res',1],['motor',1],['bat',1],['pot',1]],
+ async setup(a){a.L('pinMode(6');a.pinMode(6,1)},
+ async loop(a){a.L('var = analogRead');const v=a.analogRead(3);a.L('int pwmValue');const pw=a.map(v,0,1023,0,255);a.L('analogWrite(6');a.analogWrite(6,pw)},
+ async grade(c){const C=[];const r={};c.start();for(const f of [0,.5,1]){c.set('pot',f);await c.loops(3);const s=c.snap();r[f]={a3:B.a.A3??0,rpm:Object.values(s.cs.motor)[0]||0}}
+   const a=r[0].a3<=20&&r[1].a3>=1000;C.push(['Pot wiper read on A3 (0 → 1023)',a,a?`A3 read ${r[0].a3} at minimum and ${r[1].a3} at maximum.`:`A3 read ${r[0].a3} / ${r[.5].a3} / ${r[1].a3}. Check pot ends to 5V and GND, wiper to A3.`]);
+   const b=r[0].rpm<200;C.push(['Motor stopped with pot at minimum',b,b?'0 rpm at PWM 0.':`Motor still turning (${Math.round(r[0].rpm)} rpm) at PWM 0. Is the motor bypassing the transistor?`]);
+   const d=r[.5].rpm>1000&&r[1].rpm>r[.5].rpm*1.3;C.push(['Motor runs and speeds up with the pot',d,d?`${Math.round(r[.5].rpm).toLocaleString('en-IN')} rpm at half, ${Math.round(r[1].rpm).toLocaleString('en-IN')} rpm at full.`:`Speeds: ${Math.round(r[.5].rpm)} rpm (half), ${Math.round(r[1].rpm)} rpm (full). Check D6 → resistor → base, collector → motor → 9 V +, emitter and battery − → GND.`]);return C}},
+{name:'Experiment 5 · Smart street light (LDR)',req:[['uno',1],['ldr',1],['led',1],['res',2]],
+ async setup(a){a.L('pinMode(led');a.pinMode(9,1);a.L('Serial.begin')},
+ async loop(a){a.L('sensorValue = analogRead');const v=a.analogRead(0);B.last=v;a.L('Serial.println(sensorValue)');a.Serial.println(v);
+   if(v<100){a.L('"LED light on"');a.Serial.println('LED light on');a.L('digitalWrite(led, HIGH)');a.digitalWrite(9,1);a.L('delay(1000)');await a.delay(1000);a.L('digitalWrite(led, LOW)',0);a.digitalWrite(9,0)}else{a.L('digitalWrite(led, LOW)',1);a.digitalWrite(9,0)}a.L('delay(200)');await a.delay(200)},
+ async grade(c){const C=[];c.set('ldr',100);c.start();await c.loops(3);const br=B.last;const s=c.snap();
+   const a=br>=100&&s.lit.length===0;C.push(['Daylight: A0 ≥ 100 and light OFF',a,a?`A0 = ${br}, LED off.`:`A0 = ${br}, ${s.lit.length} LED(s) lit. Check 5V → LDR → A0, A0 → 850 Ω → GND.`]);
+   c.set('ldr',0);const ev=await c.record(1,(p,v)=>p===9&&v===1,false);const dk=B.last;const b=ev.length===1&&ev[0].lit.length===1;
+   C.push(['Darkness: A0 < 100 and street light ON',b,b?`A0 = ${dk}, LED glows, serial prints "LED light on".`:ev.length?`D9 went HIGH but ${ev[0].lit.length} LED(s) lit. Check D9 → 850 Ω → LED anode, cathode → GND.`:`A0 = ${dk}; the program never switched D9 on.`]);return C}},
+{name:'Experiment 6 · Dry / wet waste (moisture)',req:[['uno',1],['soil',1],['led',3],['res',3]],
+ async setup(a){a.L('pinMode(7');a.pinMode(7,1);a.pinMode(6,1);a.pinMode(5,1);a.L('Serial.begin')},
+ async loop(a){a.L('moistureValue = analogRead');const v=a.analogRead(0);a.L('moisture_percentage = (');const m=Math.fround(Math.fround(v/539.00)*100);B.pct=m;
+   a.L('> 0 &&');if(m>0&&m<25){a.L('digitalWrite(7, HIGH)');a.digitalWrite(7,1);a.digitalWrite(6,0);a.digitalWrite(5,0)}
+   a.L('> 25 &&');if(m>25&&m<80){a.L('digitalWrite(6, HIGH)');a.digitalWrite(7,0);a.digitalWrite(6,1);a.digitalWrite(5,0)}
+   a.L('> 80 &&');if(m>80&&m<100){a.L('digitalWrite(5, HIGH)');a.digitalWrite(7,0);a.digitalWrite(6,0);a.digitalWrite(5,1)}
+   a.L('Moisture Value');a.Serial.print('\nMoisture Value : ');a.Serial.print(m.toFixed(2));a.Serial.print('%');a.L('delay(1000)');await a.delay(1000)},
+ async grade(c){const C=[];c.start();const seen=[];
+   for(const [raw,lab,pin] of [[7,'Dry (1.30 %)',7],[167,'Moist (30.98 %)',6],[511,'Wet (94.81 %)',5]]){c.set('soil',raw);await c.loops(3);const s=c.snap();const pct=B.pct??0;
+     const ok=Math.abs(pct-raw/539*100)<1&&B.d[pin]===1&&s.lit.length===1&&!seen.includes(s.lit[0]);seen.push(s.lit[0]);
+     C.push([`${lab} → only the D${pin} LED lit`,ok,ok?`Moisture read ${pct.toFixed(2)} %, ${c.nm(s.lit[0])} lit.`:Math.abs(pct-raw/539*100)>=1?`Moisture read ${pct.toFixed(2)} % instead of ${(raw/539*100).toFixed(2)} %. Check sensor VCC → 5V, GND → GND, SIG → A0.`:`${s.lit.length} LED(s) lit (${s.lit.map(c.nm).join(', ')||'none'}). Each of D7, D6, D5 needs its own resistor and LED to GND.`])}return C}},
+{name:'Experiment 7 · pH value of milk, lime and water',req:[['uno',1],['pot',1]],presets:[['Lime juice',147],['Milk',475],['Water',512]],
+ async setup(a){a.L('Serial.begin');a.L('Turn potentiometer');a.Serial.println('Turn potentiometer to simulate pH of milk, lime, or water.')},
+ async loop(a){a.L('int analogValue');const v=a.analogRead(0);a.L('pH_value = map');const ph=a.map(v,0,1023,0,140)/10;B.ph=ph;a.L('Serial.print(');a.Serial.print('Simulated pH value: ');a.L('Serial.println(pH_value');a.Serial.println(ph.toFixed(1));a.L('delay(1000)');await a.delay(1000)},
+ async grade(c){const C=[];c.start();const r={};for(const [raw,lab] of [[147,'Lime'],[475,'Milk'],[512,'Water']]){c.set('pot',raw/1023);await c.loops(2);r[lab]={a0:B.a.A0??0,ph:B.ph??0}}
+   const a=Math.abs(r.Milk.a0-475)<=3;C.push(['Potentiometer wiper read on A0',a,a?`A0 read ${r.Lime.a0}, ${r.Milk.a0}, ${r.Water.a0} for the three samples.`:`A0 read ${r.Milk.a0} instead of about 475. Check pot ends to 5V and GND, wiper to A0.`]);
+   for(const [lab,t,nat] of [['Lime',2.0,'acidic'],['Milk',6.5,'slightly acidic'],['Water',7.0,'neutral']]){const ok=Math.abs(r[lab].ph-t)<0.15;C.push([`${lab} sample reads pH ${t.toFixed(1)} (${nat})`,ok,ok?`Serial printed "Simulated pH value: ${r[lab].ph.toFixed(1)}".`:`Printed pH ${r[lab].ph.toFixed(1)}.`])}return C}}
+
+];
+X.forEach((e,i)=>e.code=CODES[i]);
+
+/* ================= RUNTIME ================= */
+let HOOK=null;
+function resetB(){B.d=Array(14).fill(0);B.mode=Array(14).fill('IN');B.pwm=Array(14).fill(null);B.a={};B.t=0;B.loops=0;B.line=-1;B.meas=null;B.pct=null;B.last=null;B.ph=null}
+function api(id){const chk=()=>{if(!RUN||RUN.id!==id)throw STOP};const lines=EXP.code.split('\n');const out=t=>{B.serial+=t;if(B.serial.length>6000)B.serial=B.serial.slice(-4000);B.tx=performance.now()};
+  return{L(str,n=0){chk();let k=-1;for(let i=0;i<lines.length;i++)if(k<0&&lines[i].includes(str)&&n--===0)k=i;if(k>=0)B.line=k},
+    pinMode(p,m){chk();B.mode[p]=m?'OUT':'IN'},
+    digitalWrite(p,v){chk();const o=B.d[p];B.d[p]=v?1:0;B.pwm[p]=null;if(HOOK&&o!==B.d[p])HOOK(p,B.d[p])},
+    analogWrite(p,v){chk();B.pwm[p]=v;B.d[p]=v>0?1:0},
+    analogRead(ch){chk();const v=circuit().analog?.(ch)??0;B.a['A'+ch]=v;return v},
+    pulseIn(pin){chk();return circuit().pulse?.(6,pin)??0},
+    map:(x,a,b,c,d)=>Math.trunc((x-a)*(d-c)/(b-a))+c,
+    Serial:{begin(){},print(x){out(String(x))},println(x=''){out(String(x)+'\n')}},
+    async delay(ms){chk();let left=ms;while(left>0){const st=Math.min(left,40*RUN.speed);await sleep(st/RUN.speed);chk();B.t+=st;left-=st}}}}
+async function start(speed){stop();if(!uno()){msg('Place an Arduino UNO on the bench first.');return}const id=Math.random();RUN={id,speed:speed||+$('#speed').value};resetB();B.serial='';renderStatic();
+  const a=api(id);try{await EXP.setup(a);for(;;){const t=B.t;await EXP.loop(a);B.loops++;if(B.t===t)await a.delay(10)}}catch(e){if(e!==STOP)console.error(e)}}
+function stop(){RUN=null;HOOK=null;tone(0)}
+let ac,osc;function tone(v){const want=v&&RUN&&$('#sound').checked;try{if(want&&!osc){ac=ac||new AudioContext();osc=ac.createOscillator();const g=ac.createGain();g.gain.value=.04;osc.frequency.value=2000;osc.connect(g).connect(ac.destination);osc.start()}else if(!want&&osc){osc.stop();osc=null}}catch(e){}}
+
+/* ================= RENDER ================= */
+const DEFS=`<defs>
+<pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" fill="none" stroke="#ffffff10"/></pattern>
+<pattern id="mesh" width="4" height="4" patternUnits="userSpaceOnUse"><rect width="4" height="4" fill="#9a9fa5"/><circle cx="2" cy="2" r="1.1" fill="#4a4f55"/></pattern>
+<linearGradient id="gUno" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#109aa6"/><stop offset="1" stop-color="#06707b"/></linearGradient>
+<linearGradient id="gMetal" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f4f5f7"/><stop offset=".5" stop-color="#a9adb3"/><stop offset="1" stop-color="#e2e4e7"/></linearGradient>
+<linearGradient id="gMetalV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d9dce0"/><stop offset=".35" stop-color="#ffffff"/><stop offset=".7" stop-color="#9ea3a9"/><stop offset="1" stop-color="#c6c9cd"/></linearGradient>
+<linearGradient id="gLeg" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#d8dbdf"/><stop offset="1" stop-color="#9ea3a9"/></linearGradient>
+<linearGradient id="gBeige" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0dcb0"/><stop offset="1" stop-color="#c5a46a"/></linearGradient>
+<linearGradient id="gBlack" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a4a4a"/><stop offset="1" stop-color="#0c0c0c"/></linearGradient>
+<linearGradient id="gRelay" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3a7fe6"/><stop offset="1" stop-color="#1a4fae"/></linearGradient>
+<linearGradient id="gHC" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2a74d6"/><stop offset="1" stop-color="#1650a6"/></linearGradient>
+<linearGradient id="gCopper" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f0a95a"/><stop offset="1" stop-color="#a85d1e"/></linearGradient>
+<linearGradient id="gGold" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f6da8a"/><stop offset="1" stop-color="#b8902c"/></linearGradient>
+<radialGradient id="gLDR" cx=".4" cy=".35"><stop offset="0" stop-color="#ffcf7a"/><stop offset="1" stop-color="#c2701c"/></radialGradient>
+${LEDDEFS}${Object.entries(LEDC).map(([k,c])=>`<radialGradient id="led-${k}" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".9"/><stop offset=".25" stop-color="${c}"/><stop offset="1" stop-color="${c}" stop-opacity=".75"/></radialGradient>`).join('')}
+</defs>`;
+function wirePath(a,b){const dx=b[0]-a[0],dy=b[1]-a[1];const d=Math.hypot(dx,dy);const sag=Math.min(50,d*.18);return `M${a[0]} ${a[1]} C${a[0]+dx*.25} ${a[1]+dy*.25+sag} ${a[0]+dx*.75} ${a[1]+dy*.75+sag} ${b[0]} ${b[1]}`}
+const PL={led:{A:'A+',K:'K−'},relay:{C1:'COIL1',C2:'COIL2'},piezo:{P:'+',N:'−'},bat:{P:'+',N:'−'}};
+const edge=(D,d)=>d[1]<=.5?'L':d[1]>=D.w-.5?'R':d[2]>=D.h-10?'B':'T';
+const bot=D=>D.pins.some(d=>edge(D,d)==='B');
+function pinLabels(p){const D=P[p.type];return D.pins.map(d=>{const t=(PL[p.type]||{})[d[0]]??d[0];const e=edge(D,d);const x=p.x+d[1],y=p.y+d[2];
+  const gap=Math.min(99,...D.pins.filter(q=>q!==d&&edge(D,q)===e).map(q=>Math.abs(q[1]-d[1])));const rot=(e==='B'||e==='T')&&t.length*6.2>gap-2;
+  if(e==='L')return `<text class="pl" x="${x-9}" y="${y+3.5}" text-anchor="end">${t}</text>`;
+  if(e==='R')return `<text class="pl" x="${x+9}" y="${y+3.5}">${t}</text>`;
+  if(rot)return e==='B'?`<text class="pl" transform="translate(${x-3.5},${y+9}) rotate(90)">${t}</text>`:`<text class="pl" transform="translate(${x+3.5},${y-9}) rotate(-90)">${t}</text>`;
+  return `<text class="pl" x="${x}" y="${e==='B'?y+16:y-8}" text-anchor="middle">${t}</text>`}).join('')}
+function renderStatic(){
+  let s=DEFS+`<rect width="960" height="640" fill="#1f3d35"/><rect width="960" height="640" fill="url(#grid)"/><rect id="amb" width="960" height="640" fill="#020814" opacity="0" pointer-events="none"/>`;
+  if(!parts.length)s+=`<text x="480" y="320" text-anchor="middle" class="tag" style="font-size:18px">Bench is empty. Take parts from the tray to begin.</text>`;
+  for(const p of parts){const D=P[p.type];s+=`<g class="prt" data-id="${p.id}" transform="translate(${p.x},${p.y})">${D.draw(p)}<rect x="-6" y="-6" width="${D.w+12}" height="${D.h+12}" fill="transparent"/>${sel?.k==='p'&&sel.id===p.id?`<rect x="-8" y="-8" width="${D.w+16}" height="${D.h+16}" rx="6" fill="none" stroke="#ffd36b" stroke-width="2" stroke-dasharray="6 5"/>`:''}
+    <text x="${D.w/2}" y="${p.type!=='uno'&&bot(D)?-12:D.h+18+(p.type==='motor'?8:0)}" text-anchor="middle" class="tag" pointer-events="none">${esc(p.name)}${p.type==='res'?' · '+ohmTxt(p.props.ohm):''}</text></g>`}
+  for(const w of wires){const a=tpos(w.a),b=tpos(w.b);if(!a||!b)continue;const d=wirePath(a,b);const isS=sel?.k==='w'&&sel.id===w.id;
+    s+=`<g data-w="${w.id}"><path class="wire" d="${d}" stroke="#0007" stroke-width="8"/><path class="wire ${isS?'wsel':''}" d="${d}" stroke="${w.c}" stroke-width="5"/><path class="wire" d="${d}" stroke="#fff" stroke-opacity=".25" stroke-width="1.4" transform="translate(-1,-1)"/><path class="wire" d="${d}" stroke="transparent" stroke-width="16"/><circle cx="${a[0]}" cy="${a[1]}" r="4" fill="${w.c}" stroke="#0008"/><circle cx="${b[0]}" cy="${b[1]}" r="4" fill="${w.c}" stroke="#0008"/></g>`}
+  s+=`<g pointer-events="none">${parts.filter(p=>p.type!=='uno').map(pinLabels).join('')}</g>`;
+  for(const p of parts)for(const d of P[p.type].pins){const k=p.id+'.'+d[0];const w=wires.find(w=>w.a===k||w.b===k);const cx=p.x+d[1],cy=p.y+d[2];const r=p.type==='uno'?4.6:5.6;
+    s+=`<g class="term ${pend===k?'pend':''} ${w?'u':''}" data-k="${k}"><circle class="pad" cx="${cx}" cy="${cy}" r="${r}" ${w?`style="fill:${w.c}"`:''}/><circle class="hit" cx="${cx}" cy="${cy}" r="8"/></g>`}
+  s+=`<path id="ghost" fill="none" stroke="${WC[wcol]}" stroke-width="4" stroke-dasharray="7 6" pointer-events="none"/><g id="tip" pointer-events="none" style="display:none"><rect id="tipr" rx="6" fill="#0c1f1a" stroke="#ffd36b"/><text id="tipt" class="tag" style="stroke:none"></text></g>`;
+  $('#svg').innerHTML=s;renderProps();renderSensors();save()}
+function renderProps(){const el=$('#props');if(!sel){el.innerHTML=`<span class="note">${parts.length} part(s), ${wires.length} wire(s) on the bench.${RUN?' Stop the program to change the circuit.':''}</span>`;return}
+  if(sel.k==='w'){const w=wires.find(x=>x.id===sel.id);const nm=k=>{const [id,pk]=k.split('.');const p=parts.find(q=>q.id===id);return `${p.name} ${pinDef(p,pk)[3]}`};el.innerHTML=`<b>Wire</b> <span>${esc(nm(w.a))} ↔ ${esc(nm(w.b))}</span> <button class="btn red" id="del">Delete wire</button>`}
+  else{const p=parts.find(x=>x.id===sel.id);let h=`<b>${esc(p.name)}</b> <span class="note">${esc(P[p.type].name)}</span>`;
+    if(p.type==='res')h+=` <label>Resistance <select id="pohm">${[220,330,800,850,1000,10000].map(v=>`<option value="${v}" ${v===p.props.ohm?'selected':''}>${ohmTxt(v)}</option>`).join('')}</select></label>`;
+    if(p.type==='led')h+=` <label>Colour <select id="pcol">${Object.keys(LEDC).map(v=>`<option ${v===p.props.color?'selected':''}>${v}</option>`).join('')}</select></label>`;
+    el.innerHTML=h+` <button class="btn red" id="del">Delete part</button>`;
+    $('#pohm')?.addEventListener('change',e=>{p.props.ohm=+e.target.value;renderStatic()});$('#pcol')?.addEventListener('change',e=>{p.props.color=e.target.value;renderStatic()})}
+  $('#del').addEventListener('click',delSel)}
+function renderSensors(){const S=parts.filter(p=>['hc','ldr','pot','soil'].includes(p.type));const el=$('#sensors');
+  if(!S.length){el.innerHTML='<p class="empty" style="margin:6px 0">Sensor controls appear here when a sensor, LDR or potentiometer is on the bench.</p>';return}
+  const cfg={hc:['Object distance',2,330,1,v=>v+' cm'],ldr:['Ambient light',0,100,1,v=>v+' %'],pot:['Knob position',0,1,.01,v=>Math.round(v*100)+' %'],soil:['Soil moisture (raw)',0,539,1,v=>`${v} (${(v/539*100).toFixed(2)} %)`]};
+  el.innerHTML=S.map(p=>{const [l,mn,mx,st,f]=cfg[p.type];return `<div><label for="s-${p.id}">${esc(p.name)} · ${l}<output id="o-${p.id}">${f(p.props.val)}</output></label><input type="range" id="s-${p.id}" min="${mn}" max="${mx}" step="${st}" value="${p.props.val}"></div>`}).join('');
+  S.forEach(p=>{const f=cfg[p.type][4];$('#s-'+p.id).addEventListener('input',e=>{p.props.val=+e.target.value;$('#o-'+p.id).textContent=f(p.props.val);liveSensor(p);save()})})
+  if(EXP?.presets)S.filter(p=>p.type==='pot').forEach(p=>{const d=$('#s-'+p.id).parentElement;d.insertAdjacentHTML('beforeend',`<div class="bar">${EXP.presets.map(([l,v])=>`<button class="btn" data-pv="${v}">${esc(l)}</button>`).join('')}</div><div class="note" id="ph-${p.id}"></div>`);
+    d.querySelectorAll('[data-pv]').forEach(b=>b.addEventListener('click',()=>{p.props.val=+b.dataset.pv/1023;$('#s-'+p.id).value=p.props.val;$('#o-'+p.id).textContent=cfg.pot[4](p.props.val);liveSensor(p);save()}))})}
+function liveSensor(p){if(p.type==='pot')$(`#${p.id}-knob`)?.setAttribute('transform',`rotate(${-135+p.props.val*270} 32 38)`);if(p.type==='hc'){const t=$(`#${p.id}-d`);if(t)t.textContent=`object ${p.props.val} cm`}if(p.type==='soil'){const t=$(`#${p.id}-v`);if(t)t.textContent=(p.props.val/539*100).toFixed(1)+' %'}}
+const msg=t=>{$('#warns').innerHTML=`<div class="w-cau">${esc(t)}</div>`;lastWarn='x'};
+
+/* ================= FRAME ================= */
+let last=performance.now(),lastSer=null,ang={};
+function frame(now){const dt=Math.min(.1,(now-last)/1000);last=now;
+  CS=circuit();const u=uno();
+  if(u){$(`#${u.id}-L`)?.setAttribute('fill',RUN&&B.d[13]?'#ffb020':'#6b5a2a');$(`#${u.id}-TX`)?.setAttribute('fill',RUN&&now-B.tx<80?'#ffb020':'#6b5a2a');$(`#${u.id}-ON`)?.setAttribute('fill',RUN?'#4cff7a':'#2a4a2a')}
+  let amb=0;
+  for(const p of parts){const id=p.id;
+    if(p.type==='led'){const b=CS.led[id]?.b||0;$(`#${id}-glow`)?.setAttribute('opacity',(b*.85).toFixed(2));$(`#${id}-cast`)?.setAttribute('opacity',(b*.55).toFixed(2));$(`#${id}-core`)?.setAttribute('opacity',b.toFixed(2));$(`#${id}-dim`)?.setAttribute('opacity',(.3*(1-b)).toFixed(2));$(`#${id}-die`)?.setAttribute('fill',b>.1?'#fff':'#3a3a3a')}
+    if(p.type==='relay'){const r=!!CS.relay[id];$(`#${id}-arm`)?.setAttribute('x2',r?80:62);$(`#${id}-coil`)?.setAttribute('fill',r?'#f0a050':'#b87333')}
+    if(p.type==='piezo'){const o=!!CS.piezo[id];$(`#${id}-s1`)?.classList.toggle('on',o);$(`#${id}-s2`)?.classList.toggle('on',o)}
+    if(p.type==='motor'){const r=CS.motor[id]||0;ang[id]=((ang[id]||0)+r*dt*.04)%360;$(`#${id}-rot`)?.setAttribute('transform',`rotate(${ang[id]} 136 35)`);const t=$(`#${id}-rpm`);if(t)t.textContent=Math.round(r).toLocaleString('en-IN')+' rpm'}
+    if(p.type==='hc')$(`#${id}-wave`)?.setAttribute('opacity',CS.hc[id]?1:0);
+    if(p.type==='ldr')amb=Math.max(amb,(100-p.props.val)/100*.55)}
+  $('#amb')?.setAttribute('opacity',amb.toFixed(2));
+  tone(Object.values(CS.piezo).some(Boolean));
+  document.querySelectorAll('#code .cur').forEach(e=>e.classList.remove('cur'));if(RUN&&B.line>=0)$('#c'+B.line)?.classList.add('cur');
+  if(B.serial!==lastSer){lastSer=B.serial;const s=$('#serial');s.textContent=B.serial;s.scrollTop=s.scrollHeight}
+  const wk=RUN?CS.warn.map(w=>w.type+w.text).join('|')+'r':'idle';
+  if(wk!==lastWarn){lastWarn=wk;$('#warns').innerHTML=!RUN?'<p class="empty" style="margin:4px 0">Messages about the circuit (short circuits, LEDs without resistors, overloaded pins) appear here while it runs.</p>':CS.warn.length?CS.warn.map(w=>`<div class="${w.type==='pin'||w.type==='info'?'w-cau':'w-err'}">${w.type==='pin'||w.type==='info'?'Caution':'Problem'}: ${esc(w.text)}</div>`).join(''):'<div class="ok">Circuit running, no electrical problems found.</div>'}
+  if(t0){const s=Math.floor((Date.now()-t0)/1000);$('#timer').textContent=`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`}
+  requestAnimationFrame(frame)}
+
+/* ================= EDITING ================= */
+const svg=$('#svg');
+const pt=e=>{const p=svg.createSVGPoint();p.x=e.clientX;p.y=e.clientY;const q=p.matrixTransform(svg.getScreenCTM().inverse());return [q.x,q.y]};
+let nid=1;
+function addPart(type,props,x,y){const D=P[type];const n=parts.filter(p=>p.type===type).length+1;let id;do{id='p'+(nid++)}while(parts.some(p=>p.id===id));
+  if(x==null)[x,y]=freeSpot(type)
+  const p={id,type,x:Math.max(0,Math.min(960-D.w,x)),y:Math.max(0,Math.min(640-D.h-20,y)),name:D.pre+n,props:{...(D.props||{}),...(props||{})}};
+  if(type==='uno')p.name='Arduino';parts.push(p);if(!t0)t0=Date.now();sel={k:'p',id};renderStatic();return id}
+function freeSpot(type){const D=P[type];
+  const box=(x,y,w,h,t)=>[x-(t==='uno'?30:0)-30,y-34,x+w+30,y+h+34];
+  const taken=parts.map(p=>box(p.x,p.y,P[p.type].w,P[p.type].h,p.type));
+  const free=(x,y)=>{const [a,b,c,d]=box(x,y,D.w,D.h,type);return taken.every(([e,f,g,h])=>c<=e||a>=g||d<=f||b>=h)};
+  if(type==='uno'){for(const [x,y] of [[40,384],[600,384],[40,40]])if(free(x,y))return [x,y]}
+  else for(const y of [40,250,440])if(y+D.h<=622)for(let x=30;x<=950-D.w;x+=10)if(free(x,y))return [x,y];
+  const k=parts.length;return [380+(k%5)*110,50+(Math.floor(k/5)%3)*160]}
+function addWire(a,b,c){if(a===b||wires.some(w=>(w.a===a&&w.b===b)||(w.a===b&&w.b===a)))return;wires.push({id:'w'+(nid++),a,b,c:c||WC[wcol]});renderStatic()}
+function delSel(){if(!sel||RUN)return;if(sel.k==='w')wires=wires.filter(w=>w.id!==sel.id);else{parts=parts.filter(p=>p.id!==sel.id);wires=wires.filter(w=>!w.a.startsWith(sel.id+'.')&&!w.b.startsWith(sel.id+'.'))}sel=null;renderStatic()}
+svg.addEventListener('pointerdown',e=>{const t=e.target;
+  const term=t.closest('.term');if(term){if(RUN){msg('Stop the program before changing wires.');return}const k=term.dataset.k;if(pend&&pend!==k){addWire(pend,k);pend=null}else pend=pend===k?null:k;sel=null;renderStatic();return}
+  const wg=t.closest('[data-w]');if(wg){sel={k:'w',id:wg.dataset.w};pend=null;renderStatic();return}
+  const g=t.closest('.prt');if(g){const p=parts.find(q=>q.id===g.dataset.id);sel={k:'p',id:p.id};pend=null;if(!RUN){const [x,y]=pt(e);drag={p,dx:x-p.x,dy:y-p.y};svg.setPointerCapture(e.pointerId)}renderStatic();return}
+  sel=null;pend=null;renderStatic()});
+svg.addEventListener('pointermove',e=>{const [x,y]=pt(e);
+  if(drag){const D=P[drag.p.type];drag.p.x=Math.round(Math.max(0,Math.min(960-D.w,x-drag.dx))/10)*10;drag.p.y=Math.round(Math.max(0,Math.min(620-D.h,y-drag.dy))/10)*10;renderStatic();return}
+  const gh=$('#ghost');if(pend&&gh){const a=tpos(pend);gh.setAttribute('d',wirePath(a,[x,y]))}
+  const term=e.target.closest?.('.term');const tip=$('#tip');if(tip){if(term){const [id,k]=term.dataset.k.split('.');const p=parts.find(q=>q.id===id);const txt=`${p.name} · ${pinDef(p,k)[3]}`;const tt=$('#tipt');tt.textContent=txt;const w=txt.length*6.6+16;const tx=Math.min(960-w-4,x+12),ty=Math.max(24,y-14);tt.setAttribute('x',tx+8);tt.setAttribute('y',ty);const r=$('#tipr');r.setAttribute('x',tx);r.setAttribute('y',ty-15);r.setAttribute('width',w);r.setAttribute('height',22);tip.style.display=''}else tip.style.display='none'}});
+svg.addEventListener('pointerup',()=>{drag=null});
+document.addEventListener('keydown',e=>{if(e.target.matches('input,select,textarea'))return;if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();delSel()}if(e.key==='Escape'){pend=null;sel=null;renderStatic()}});
+
+/* ================= SAVE ================= */
+const SK=()=>'iotpractice-'+$('#exp').value;
+function save(){try{localStorage.setItem(SK(),JSON.stringify({parts,wires}))}catch(e){}}
+function load(){parts=[];wires=[];try{const d=JSON.parse(localStorage.getItem(SK())||'null');if(d){parts=d.parts||[];wires=d.wires||[]}}catch(e){}}
+
+/* ================= GRADING ================= */
+async function grade(){
+  const name=$('#sname').value.trim()||'Practice',usn=$('#usn').value.trim()||'no USN';
+
+  const btn=$('#submit');btn.disabled=true;btn.textContent='Checking…';stop();sel=null;pend=null;renderStatic();
+  const time=$('#timer').textContent;const warnSeen=new Map();let checks=[];
+  const nm=id=>parts.find(p=>p.id===id)?.name||'?';
+  const snap=()=>{const cs=circuit();cs.warn.forEach(w=>warnSeen.set(w.text,w.type));return{cs,lit:parts.filter(p=>p.type==='led'&&(cs.led[p.id]?.b||0)>.15).map(p=>p.id)}};
+  const c={nm,part:id=>parts.find(p=>p.id===id),snap,
+    start:()=>{start(40)},
+    set:(type,v)=>parts.filter(p=>p.type===type).forEach(p=>{p.props.val=v;liveSensor(p)}),
+    loops:async n=>{const t=B.loops+n;const lim=Date.now()+4000;while(RUN&&B.loops<t&&Date.now()<lim)await sleep(15)},
+    record:null};
+  try{
+    if(!uno())checks=[['Arduino UNO on the bench',false,'No Arduino placed, so the program could not run.']];
+    else{c.record=(n,f,ds=true)=>new Promise(res=>{const ev=[];let done=false;const fin=()=>{if(done)return;done=true;HOOK=null;res(ev)};if(ds)start(40);HOOK=(p,v)=>{if(!f(p,v))return;const s=snap();ev.push({p,v,...s});if(ev.length>=n)fin()};setTimeout(fin,5000)});
+      checks=await EXP.grade(c)}
+  }catch(e){console.error(e);checks.push(['Program run',false,'The run was interrupted.'])}
+  stop();
+  // components
+  const req=EXP.req;const cnt=t=>parts.filter(p=>p.type===t).length;let cs=0;const comp=[];
+  for(const [t,n] of req){let have=cnt(t);let note='';if(t==='led'&&EXP.ledNeed){const g=parts.filter(p=>p.type==='led'&&p.props.color==='green').length,r=parts.filter(p=>p.type==='led'&&p.props.color==='red').length;have=Math.min(g,1)+Math.min(r,1);note=` (green ${g}, red ${r})`}
+    const sc=Math.min(have,n)/n;cs+=sc;comp.push([`${P[t].name} × ${n}`,sc===1,`Placed ${t==='led'&&EXP.ledNeed?cnt('led'):have}${note}`])}
+  const extra=[...new Set(parts.map(p=>p.type))].filter(t=>!req.some(r=>r[0]===t));
+  let compPts=20*cs/req.length-Math.min(6,extra.length*2);compPts=Math.max(0,compPts);
+  const funPts=checks.length?60*checks.filter(x=>x[1]).length/checks.length:0;
+  const types=new Set(warnSeen.values());let safe=20;const safeNotes=[];
+  if(types.has('short')){safe=0;safeNotes.push('Short circuit detected')}if(types.has('burn')){safe-=10;safeNotes.push('LED without current-limiting resistor')}if(types.has('base')){safe-=10;safeNotes.push('Transistor base without resistor')}safe=Math.max(0,safe);
+  if(!uno()||!checks.some(x=>x[1]))safe=Math.min(safe,10);
+  const total=Math.round(compPts+funPts+safe);
+  const cautions=[...warnSeen].filter(([,t])=>t==='pin').map(([x])=>x);
+  const row=(l,ok,m)=>`<tr><td>${esc(l)}</td><td class="${ok?'ok':'no'}">${ok?'✓':'✗'}</td><td>${esc(m)}</td></tr>`;
+  const grade=total>=90?'Excellent':total>=75?'Good':total>=50?'Satisfactory':'Needs improvement';
+  $('#report').innerHTML=`<div class="score"><b>${total}</b><span style="font-size:20px;font-weight:600">/ 100 · ${grade}</span></div>
+   <p style="margin:8px 0 14px">${esc(name)} · ${esc(usn)} · ${esc(EXP.name)} · time ${time}</p>
+   <div class="scroll"><table><thead><tr><th>Check</th><th>Result</th><th>Details</th></tr></thead><tbody>
+   <tr><th colspan="3">Components (${compPts.toFixed(1)} / 20)</th></tr>${comp.map(r=>row(...r)).join('')}${extra.length?row('No unnecessary parts',false,'Extra: '+extra.map(t=>P[t].name).join(', ')+' (−2 each)'):''}
+   <tr><th colspan="3">Wiring and output (${funPts.toFixed(1)} / 60)</th></tr>${checks.map(r=>row(...r)).join('')}
+   <tr><th colspan="3">Electrical safety (${safe} / 20)</th></tr>${safeNotes.length?safeNotes.map(n=>row(n,false,'Deducted')).join(''):row('No shorts, burnt LEDs or unprotected transistor',true,'Safe circuit')}
+   ${cautions.map(cn=>row('Caution (no deduction)',true,cn)).join('')}
+</tbody></table></div>
+   <div class="bar" style="margin-top:12px"><button class="btn" id="copyRep">Copy result</button><button class="btn" id="nextStu">Start again</button></div>`;
+  $('#nextStu').addEventListener('click',e=>{const b=e.currentTarget;if(!b.dataset.arm){b.dataset.arm=1;b.textContent='Tap again to clear the bench';return}VIOL=[];try{localStorage.removeItem('iotbench-viol')}catch(er){}showBadge();parts=[];wires=[];t0=null;$('#timer').textContent='00:00';$('#sname').value='';$('#usn').value='';setExp();window.scrollTo(0,0)});
+  const txt=`${name}, ${usn}\n${EXP.name}\nScore ${total}/100 (${grade}), time ${time}\nComponents ${compPts.toFixed(1)}/20, Wiring & output ${funPts.toFixed(1)}/60, Safety ${safe}/20\n`+checks.map(r=>`${r[1]?'✓':'✗'} ${r[0]}: ${r[2]}`).join('\n')+`\nTab switches: ${VIOL.length}`+VIOL.map(v=>`\n  ${v.at} (Exp ${v.exp}) ${v.kind}`).join('');
+  $('#copyRep').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(txt);$('#copyRep').textContent='Copied'}catch(e){$('#copyRep').textContent='Copy blocked'}});
+  window.__last={total,compPts,funPts,safe,checks,comp,warn:[...warnSeen],viol:VIOL.length};
+  btn.disabled=false;btn.textContent='Check my circuit';$('#report').scrollIntoView({behavior:'smooth',block:'start'})}
+
+
+/* ================= TAB-SWITCH MONITOR ================= */
+let VIOL=[];try{VIOL=JSON.parse(localStorage.getItem('iotbench-viol')||'[]')}catch(e){}
+let pendWarn=false,blurT=null;
+const active=()=>false;
+function showBadge(){const b=$('#viol');b.hidden=!VIOL.length;b.textContent=`Tab switches: ${VIOL.length}`}
+function addViol(kind){VIOL.push({kind,at:$('#timer').textContent,exp:+$('#exp').value+1,clock:new Date().toLocaleTimeString('en-IN')});try{localStorage.setItem('iotbench-viol',JSON.stringify(VIOL))}catch(e){}pendWarn=true;showBadge()}
+function showWarn(){if(!pendWarn)return;pendWarn=false;const v=VIOL[VIOL.length-1];$('#vmsg').textContent=`Leaving the test page is not allowed. This has been recorded (${VIOL.length} time${VIOL.length>1?'s':''}; last at ${v.at} into the test, ${v.kind.toLowerCase()}) and will be shown on your score sheet.`;$('#vwarn').hidden=false;$('#vok').focus()}
+document.addEventListener('visibilitychange',()=>{if(!active())return;if(document.hidden){clearTimeout(blurT);addViol('Switched to another tab or minimised the browser')}else showWarn()});
+window.addEventListener('blur',()=>{if(!active())return;clearTimeout(blurT);blurT=setTimeout(()=>{if(!document.hidden&&!document.hasFocus())addViol('Left the test window for another app or window')},1500)});
+window.addEventListener('focus',()=>{clearTimeout(blurT);showWarn()});
+$('#vok').addEventListener('click',()=>{$('#vwarn').hidden=true});
+showBadge();
+/* ================= INIT ================= */
+$('#exp').innerHTML=X.map((e,i)=>`<option value="${i}">${esc(e.name)}</option>`).join('');
+$('#parts').innerHTML=TRAY.map(([t,pr,l],i)=>{const D=P[t];const o={id:'tray'+i,type:t,props:{...(D.props||{}),...(pr||{})},name:''};return `<button class="part" data-i="${i}" title="${esc(l||D.name)}"><svg viewBox="${-25} ${-12} ${D.w+50} ${D.h+28}" aria-hidden="true">${D.draw(o).replace(/id="[^"]*"/g,'')}</svg>${esc(l||D.name)}</button>`}).join('');
+$('#parts').insertAdjacentHTML('beforebegin',`<svg width="0" height="0" style="position:absolute">${DEFS}</svg>`);
+$('#parts').addEventListener('click',e=>{const b=e.target.closest('.part');if(!b)return;if(RUN){msg('Stop the program before adding parts.');return}const [t,pr]=TRAY[+b.dataset.i];addPart(t,pr)});
+$('#swatches').innerHTML=WC.map((c,i)=>`<button class="sw" style="background:${c}" aria-label="Wire colour ${i+1}" aria-pressed="${i===wcol}" data-i="${i}"></button>`).join('');
+$('#swatches').addEventListener('click',e=>{const b=e.target.closest('.sw');if(!b)return;wcol=+b.dataset.i;$('#swatches').querySelectorAll('.sw').forEach(x=>x.setAttribute('aria-pressed',x===b));if(sel?.k==='w'){const w=wires.find(x=>x.id===sel.id);if(w)w.c=WC[wcol]}renderStatic()});
+function setExp(){stop();EXP=X[+$('#exp').value];load();sel=null;pend=null;B.serial='';resetB();
+  $('#code').innerHTML=EXP.code.split('\n').map((l,k)=>`<div id="c${k}"><i>${k+1}</i>${esc(l)}</div>`).join('');$('#cname').textContent=`exp${+$('#exp').value+1}.ino · read-only`;
+  $('#report').innerHTML='<h2 style="margin:0 0 6px;font-size:20px">Score sheet</h2><p class="empty" style="margin:0">Build the circuit for the chosen experiment, upload and run it, then press Check my circuit. The program is tested on your circuit and a score out of 100 appears here, with what to fix. Practise as often as you like.</p>';renderStatic()}
+$('#exp').addEventListener('change',()=>{t0=null;$('#timer').textContent='00:00';setExp()});
+$('#run').addEventListener('click',()=>{sel=null;pend=null;start()});
+$('#stop').addEventListener('click',()=>{stop();renderStatic()});
+$('#speed').addEventListener('change',()=>{if(RUN)RUN.speed=+$('#speed').value});
+$('#clear').addEventListener('click',()=>{if(RUN)return;if($('#clear').dataset.arm){parts=[];wires=[];sel=null;pend=null;delete $('#clear').dataset.arm;$('#clear').textContent='Clear bench';renderStatic()}else{$('#clear').dataset.arm=1;$('#clear').textContent='Tap again to clear';setTimeout(()=>{delete $('#clear').dataset.arm;$('#clear').textContent='Clear bench'},2500)}});
+$('#submit').addEventListener('click',grade);
+const hashExp=()=>{const m=/^#exp([1-7])$/.exec(location.hash);if(m){$('#exp').value=+m[1]-1;return true}};hashExp();
+window.addEventListener('hashchange',()=>{if(hashExp())setExp()});
+$('#exp').addEventListener('change',()=>{try{history.replaceState(null,'','#exp'+(+$('#exp').value+1))}catch(e){}});
+setExp();requestAnimationFrame(frame);
+window.__tb={addPart,addWire,get parts(){return parts},get wires(){return wires},setExp:i=>{$('#exp').value=i;setExp()},clear:()=>{parts=[];wires=[];renderStatic()},grade,start,stop,circuit,B};
+}
+</script>
+</body>
+</html>

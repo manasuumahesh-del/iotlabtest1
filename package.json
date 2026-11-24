@@ -1,0 +1,9 @@
+{
+  "name": "iot-lab-exam",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BCS701 IoT Lab: student kit (learn and practice), lab exam and faculty panel. CITNC, Dept. of CSE.",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": { "dev": "node tools/local-server.js" }
+}
